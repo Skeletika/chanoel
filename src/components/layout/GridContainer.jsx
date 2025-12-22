@@ -4,7 +4,11 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { X, Maximize2, Minimize2 } from 'lucide-react';
 
+import { useCouple } from '../../context/CoupleContext';
+import _ from 'lodash';
+
 const GridContainer = ({ children }) => {
+    const { coupleData, updateCouple } = useCouple();
     const defaultLayouts = {
         lg: [
             { i: 'gallery', x: 0, y: 0, w: 2, h: 2 },
@@ -49,6 +53,10 @@ const GridContainer = ({ children }) => {
     };
 
     const [layouts, setLayouts] = useState(() => {
+        // Priority: DB -> LocalStorage -> Default
+        if (coupleData?.couple?.dashboard_layout) {
+            return coupleData.couple.dashboard_layout;
+        }
         const saved = localStorage.getItem('dashboard_layout');
         return saved ? JSON.parse(saved) : defaultLayouts;
     });
@@ -56,6 +64,13 @@ const GridContainer = ({ children }) => {
     const [width, setWidth] = useState(1200);
     const containerRef = useRef(null);
     const [expandedModule, setExpandedModule] = useState(null);
+
+    // Debounced save function
+    const saveToDb = useRef(
+        _.debounce((newLayouts) => {
+            updateCouple({ dashboard_layout: newLayouts }).catch(console.error);
+        }, 2000)
+    ).current;
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -70,9 +85,22 @@ const GridContainer = ({ children }) => {
         return () => resizeObserver.disconnect();
     }, []);
 
-    const onLayoutChange = (layout, layouts) => {
-        setLayouts(layouts);
-        localStorage.setItem('dashboard_layout', JSON.stringify(layouts));
+    // Sync from DB if it changes externally (and strictly implies a new object reference from context)
+    useEffect(() => {
+        if (coupleData?.couple?.dashboard_layout) {
+            // Check if deeper equality check is needed to avoid loop, 
+            // but for now relying on Context passing new ref only on actual update
+            // and comparing with local state might be good.
+            if (JSON.stringify(coupleData.couple.dashboard_layout) !== JSON.stringify(layouts)) {
+                setLayouts(coupleData.couple.dashboard_layout);
+            }
+        }
+    }, [coupleData?.couple?.dashboard_layout]);
+
+    const onLayoutChange = (layout, newLayouts) => {
+        setLayouts(newLayouts);
+        localStorage.setItem('dashboard_layout', JSON.stringify(newLayouts));
+        saveToDb(newLayouts);
     };
 
     // Clone children to inject props

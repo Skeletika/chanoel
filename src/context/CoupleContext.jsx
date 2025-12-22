@@ -66,7 +66,7 @@ export const CoupleProvider = ({ children }) => {
           // Reset data to avoid stale state from previous session
           personA: { name: '', age: '', photo: null, color: '#e17055', nickname: '', bio: '' },
           personB: { name: '', age: '', photo: null, color: '#0984e3', nickname: '', bio: '' },
-          couple: { name: '', meetDate: '', officialDate: '', meetPlace: '', quote: '', photo: null, song: '' },
+          couple: { name: '', meetDate: '', officialDate: '', meetPlace: '', quote: '', photo: null, song: '', dashboard_layout: null },
           security: { pin: '', individualCodes: {} }
         }));
         setLoading(false);
@@ -96,7 +96,8 @@ export const CoupleProvider = ({ children }) => {
         meetPlace: profile.couples?.meet_place || '',
         quote: profile.couples?.quote || '',
         song: profile.couples?.song || '',
-        theme_config: profile.couples?.theme_config || null
+        theme_config: profile.couples?.theme_config || null,
+        dashboard_layout: profile.couples?.dashboard_layout || null
       };
 
       setCoupleData({
@@ -168,6 +169,11 @@ export const CoupleProvider = ({ children }) => {
         dbData.theme_config = newData.theme_config;
       }
 
+      // Handle dashboard_layout
+      if (newData.hasOwnProperty('dashboard_layout')) {
+        dbData.dashboard_layout = newData.dashboard_layout;
+      }
+
       const { error } = await supabase.from('couples').update(dbData).eq('id', coupleData.couple.id);
       if (error) throw error;
 
@@ -210,7 +216,7 @@ export const CoupleProvider = ({ children }) => {
       // This will trigger ProtectedRoute to redirect to Onboarding
       setCoupleData(prev => ({
         ...prev,
-        couple: { name: '', meetDate: '', officialDate: '', meetPlace: '', quote: '', photo: null, song: '' },
+        couple: { name: '', meetDate: '', officialDate: '', meetPlace: '', quote: '', photo: null, song: '', dashboard_layout: null },
         personA: { name: '', age: '', photo: null, color: '#e17055', nickname: '', bio: '' },
         personB: { name: '', age: '', photo: null, color: '#0984e3', nickname: '', bio: '' },
         // Keep isAuthenticated true so they stay logged in but go to onboarding
