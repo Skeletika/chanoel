@@ -46,7 +46,12 @@ export const ThemeProvider = ({ children }) => {
     // 4. Compute Active Colors based on Theme & Reference/Override
     const activeColors = useMemo(() => {
         // Priority: Override > Reference > Default
-        const basePalette = overridePalette || referencePalette || DEFAULT_DARK_PALETTE;
+        // Priority: Override > Reference > Default (Merged to ensure safety)
+        const basePalette = {
+            ...DEFAULT_DARK_PALETTE,
+            ...(referencePalette || {}),
+            ...(overridePalette || {})
+        };
 
         if (theme === 'dark') {
             return basePalette;
