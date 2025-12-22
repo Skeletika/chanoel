@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCouple } from '../context/CoupleContext';
 import GridContainer from '../components/layout/GridContainer';
 import ModuleCard from '../components/layout/ModuleCard';
@@ -16,6 +16,15 @@ import { Settings, LogOut } from 'lucide-react';
 const Dashboard = () => {
     const { coupleData, logout } = useCouple();
     const [showSettings, setShowSettings] = useState(false);
+
+    useEffect(() => {
+        if (coupleData?.couple?.name) {
+            document.title = coupleData.couple.name;
+        }
+        return () => {
+            document.title = 'Ideal'; // Reset on unmount
+        };
+    }, [coupleData?.couple?.name]);
 
     return (
         <div style={{

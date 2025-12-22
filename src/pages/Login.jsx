@@ -168,7 +168,7 @@ const Login = () => {
                                         type="text"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                        placeholder="Ex: Camille"
+                                        placeholder="Ex: Charline"
                                         required
                                         style={inputStyle}
                                     />
@@ -186,7 +186,7 @@ const Login = () => {
                                         type="text"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                                        placeholder="camille_123"
+                                        placeholder="chaaaa_123"
                                         required
                                         style={inputStyle}
                                     />
@@ -209,7 +209,7 @@ const Login = () => {
                                 type="text"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder={isSignUp ? "camille@exemple.com" : "Email ou @pseudo"}
+                                placeholder={isSignUp ? "charline.r@exemple.com" : "Email ou @pseudo"}
                                 required
                                 style={inputStyle}
                             />

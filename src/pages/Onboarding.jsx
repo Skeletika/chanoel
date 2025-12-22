@@ -388,7 +388,7 @@ const Onboarding = () => {
                             value={profileData.fullName}
                             onChange={e => setProfileData({ ...profileData, fullName: e.target.value })}
                             style={inputStyle}
-                            placeholder="Ex: Camille"
+                            placeholder="Ex: Charline"
                         />
 
                         <label style={labelStyle}>Surnom (donné par votre partenaire)</label>
@@ -397,7 +397,7 @@ const Onboarding = () => {
                             value={profileData.nickname}
                             onChange={e => setProfileData({ ...profileData, nickname: e.target.value })}
                             style={inputStyle}
-                            placeholder="Ex: Mon Cœur"
+                            placeholder="Ex: Ma femme idéale"
                         />
 
 
