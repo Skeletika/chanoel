@@ -295,9 +295,17 @@ export const CoupleProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    setCoupleData(prev => ({ ...prev, isAuthenticated: false }));
+    try {
+      // Attempt server logout, but don't block local logout if it fails (e.g. 403, session missing)
+      const { error } = await supabase.auth.signOut();
+      if (error) console.warn("Logout warning:", error.message);
+    } catch (err) {
+      console.warn("Logout error:", err);
+    } finally {
+      // Always clear local state
+      setCoupleData(prev => ({ ...prev, isAuthenticated: false }));
+      setSession(null);
+    }
   };
 
   return (
