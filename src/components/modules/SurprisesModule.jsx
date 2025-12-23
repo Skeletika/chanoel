@@ -6,7 +6,7 @@ import { useCouple } from '../../context/CoupleContext';
 import { useRealtime } from '../../hooks/useRealtime';
 
 const SurprisesModule = () => {
-    const { coupleData } = useCouple();
+    const { coupleData, session } = useCouple();
     const [surprises, setSurprises] = useState([]);
     const [showAdd, setShowAdd] = useState(false);
     const [newSurprise, setNewSurprise] = useState({ title: '', message: '', unlockDate: '' });
@@ -56,6 +56,7 @@ const SurprisesModule = () => {
                 .from('surprises')
                 .insert([{
                     couple_id: coupleData.couple.id,
+                    user_id: session?.user?.id,
                     title: newSurprise.title,
                     message: newSurprise.message,
                     unlock_date: new Date(newSurprise.unlockDate).toISOString()
@@ -158,6 +159,20 @@ const SurprisesModule = () => {
                                 <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
                                     "{surprise.message}"
                                 </p>
+                            )}
+
+                            {/* Attribution */}
+                            {surprise.user_id && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '8px',
+                                    right: '8px',
+                                    width: '16px', height: '16px', borderRadius: '50%',
+                                    backgroundImage: `url(${coupleData.personA.id === surprise.user_id ? coupleData.personA.photo : coupleData.personB.photo})`,
+                                    backgroundSize: 'cover',
+                                    backgroundColor: coupleData.personA.id === surprise.user_id ? coupleData.personA.color : coupleData.personB.color,
+                                    opacity: 0.5
+                                }} />
                             )}
                         </div>
                     );

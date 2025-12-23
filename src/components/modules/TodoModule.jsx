@@ -6,7 +6,7 @@ import { useCouple } from '../../context/CoupleContext';
 import { useRealtime } from '../../hooks/useRealtime';
 
 const TodoModule = () => {
-    const { coupleData } = useCouple();
+    const { coupleData, session } = useCouple();
     const [todos, setTodos] = useState([]);
     const [newTodo, setNewTodo] = useState('');
     const [category, setCategory] = useState('Maison');
@@ -48,6 +48,7 @@ const TodoModule = () => {
                 .from('todos')
                 .insert([{
                     couple_id: coupleData.couple.id,
+                    user_id: session?.user?.id,
                     text: newTodo.trim(),
                     category,
                     done: false
@@ -154,9 +155,19 @@ const TodoModule = () => {
                                         fontSize: '0.7rem',
                                         color: categoryColors[todo.category],
                                         fontWeight: 600,
-                                        marginTop: '2px'
+                                        marginTop: '2px',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem'
                                     }}>
                                         {todo.category.toUpperCase()}
+                                        {todo.user_id && (
+                                            <div style={{
+                                                width: '16px', height: '16px', borderRadius: '50%',
+                                                backgroundImage: `url(${coupleData.personA.id === todo.user_id ? coupleData.personA.photo : coupleData.personB.photo})`,
+                                                backgroundSize: 'cover',
+                                                backgroundColor: coupleData.personA.id === todo.user_id ? coupleData.personA.color : coupleData.personB.color,
+                                                opacity: 0.7
+                                            }} />
+                                        )}
                                     </div>
                                 </div>
                                 <button onClick={() => deleteTodo(todo.id)} style={{ color: '#ff7675', opacity: 0.5 }} onMouseOver={e => e.target.style.opacity = 1} onMouseOut={e => e.target.style.opacity = 0.5}>

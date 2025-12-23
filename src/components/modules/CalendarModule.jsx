@@ -6,7 +6,7 @@ import { useCouple } from '../../context/CoupleContext';
 import { useRealtime } from '../../hooks/useRealtime';
 
 const CalendarModule = () => {
-    const { coupleData } = useCouple();
+    const { coupleData, session } = useCouple();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -56,6 +56,7 @@ const CalendarModule = () => {
                 .from('events')
                 .insert([{
                     couple_id: coupleData.couple.id,
+                    user_id: session?.user?.id,
                     title: newEvent.title,
                     date: new Date(newEvent.date).toISOString(),
                     type: newEvent.type

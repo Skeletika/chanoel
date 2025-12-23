@@ -69,27 +69,30 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                     </div>
                 </div>
 
-                {/* Content Area */}
-                <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+                {/* Content Area - 'nodrag' class allows interaction on mobile/touch without triggering drag */}
+                <div className="nodrag" style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
                     {content}
                 </div>
 
-                {/* RGL Resize Handle (Invisible but functional) */}
+                {/* RGL Resize Handle (Invisible hit area, made larger for easier grab) */}
                 {resizeHandle && React.cloneElement(resizeHandle, {
                     style: {
                         ...resizeHandle.props.style,
                         position: 'absolute',
                         bottom: 0,
                         right: 0,
-                        zIndex: 10
+                        width: '40px', // Increased hit area
+                        height: '40px', // Increased hit area
+                        zIndex: 20,
+                        cursor: 'se-resize'
                     }
                 })}
 
                 {/* Visual Resize Handle (Visible Icon) */}
                 <div style={{
                     position: 'absolute',
-                    bottom: '4px',
-                    right: '4px',
+                    bottom: '6px',
+                    right: '6px',
                     width: '24px',
                     height: '24px',
                     pointerEvents: 'none',

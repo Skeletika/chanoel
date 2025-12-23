@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
 const TimelineModule = () => {
-    const { coupleData } = useCouple();
+    const { coupleData, session } = useCouple();
     const [events, setEvents] = useState([]);
     const [showAdd, setShowAdd] = useState(false);
     const [newEvent, setNewEvent] = useState({ title: '', date: '', emotion: 'heart', description: '' });
@@ -64,6 +64,7 @@ const TimelineModule = () => {
                     .from('timeline_events')
                     .insert([{
                         couple_id: coupleData.couple.id,
+                        user_id: session?.user?.id,
                         title: newEvent.title,
                         date: newEvent.date,
                         emotion: newEvent.emotion,
@@ -195,9 +196,23 @@ const TimelineModule = () => {
                             width: '32px', height: '32px', borderRadius: '50%',
                             background: 'white', border: '2px solid var(--color-border)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            zIndex: 1, flexShrink: 0
+                            zIndex: 1, flexShrink: 0,
+                            position: 'relative'
                         }}>
                             {getIcon(event.emotion)}
+                            {/* Attribution Badge */}
+                            {event.user_id && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '-4px',
+                                    right: '-4px',
+                                    width: '16px', height: '16px', borderRadius: '50%',
+                                    border: '1px solid white',
+                                    backgroundImage: `url(${coupleData.personA.id === event.user_id ? coupleData.personA.photo : coupleData.personB.photo})`,
+                                    backgroundSize: 'cover',
+                                    backgroundColor: coupleData.personA.id === event.user_id ? coupleData.personA.color : coupleData.personB.color
+                                }} />
+                            )}
                         </div>
 
                         {/* Content */}

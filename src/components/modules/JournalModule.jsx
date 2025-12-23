@@ -6,7 +6,7 @@ import { useCouple } from '../../context/CoupleContext';
 import { useRealtime } from '../../hooks/useRealtime';
 
 const JournalModule = () => {
-    const { coupleData } = useCouple();
+    const { coupleData, session } = useCouple();
     const [entries, setEntries] = useState([]);
     const [newEntry, setNewEntry] = useState('');
     const [mood, setMood] = useState('neutral');
@@ -69,6 +69,7 @@ const JournalModule = () => {
                     .from('journal_entries')
                     .insert([{
                         couple_id: coupleData.couple.id,
+                        user_id: session?.user?.id,
                         text: newEntry,
                         mood,
                         date: new Date().toISOString()
@@ -192,7 +193,15 @@ const JournalModule = () => {
                         // Removed onClick for expansion to avoid conflict with buttons, using explicit expand button logic if needed or just always show brief and expand logic
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {entry.user_id && (
+                                        <div style={{
+                                            width: '20px', height: '20px', borderRadius: '50%',
+                                            backgroundImage: `url(${coupleData.personA.id === entry.user_id ? coupleData.personA.photo : coupleData.personB.photo})`,
+                                            backgroundSize: 'cover',
+                                            backgroundColor: coupleData.personA.id === entry.user_id ? coupleData.personA.color : coupleData.personB.color
+                                        }} />
+                                    )}
                                     {new Date(entry.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
