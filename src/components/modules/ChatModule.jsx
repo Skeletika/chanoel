@@ -102,7 +102,7 @@ const ChatModule = () => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div ref={containerRef} style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.5rem' }}>
+            <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.5rem' }}>
                 {messages.length === 0 && (
                     <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '1rem 0' }}>
                         Démarrez la conversation ! ❤️
@@ -121,41 +121,60 @@ const ChatModule = () => {
                                 alignSelf: isMe ? 'flex-end' : 'flex-start',
                                 maxWidth: '80%',
                                 display: 'flex',
+                                flexDirection: 'column', // Changed to column to stack name and bubble if needed
+                                alignItems: isMe ? 'flex-end' : 'flex-start',
+                            }}
+                        >
+                            {/* Nickname display - only for received messages or if desired */}
+                            {!isMe && (
+                                <span style={{
+                                    fontSize: '0.7rem',
+                                    color: 'var(--color-text-muted)',
+                                    marginBottom: '2px',
+                                    marginLeft: '42px' // Offset for avatar size (24px) + gap (0.5rem/8px) roughly
+                                }}>
+                                    {senderData.nickname || senderData.name || 'Inconnu'}
+                                </span>
+                            )}
+
+                            <div style={{
+                                display: 'flex',
                                 alignItems: 'flex-end',
                                 gap: '0.5rem',
                                 flexDirection: isMe ? 'row' : 'row-reverse'
-                            }}
-                        >
-                            <div style={{
-                                padding: '0.75rem',
-                                borderRadius: '16px',
-                                borderBottomRightRadius: isMe ? '4px' : '16px',
-                                borderBottomLeftRadius: isMe ? '16px' : '4px',
-                                backgroundColor: isMe ? 'var(--color-primary)' : 'var(--color-bg)',
-                                color: isMe ? 'white' : 'var(--color-text)',
-                                fontSize: '0.95rem',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                             }}>
-                                {msg.content}
                                 <div style={{
-                                    fontSize: '0.65rem',
-                                    opacity: 0.7,
-                                    marginTop: '0.25rem',
-                                    textAlign: 'right'
+                                    padding: '0.75rem',
+                                    borderRadius: '16px',
+                                    borderBottomRightRadius: isMe ? '4px' : '16px',
+                                    borderBottomLeftRadius: isMe ? '16px' : '4px',
+                                    backgroundColor: isMe ? 'var(--color-primary)' : 'var(--color-bg)',
+                                    color: isMe ? 'white' : 'var(--color-text)',
+                                    fontSize: '0.95rem',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}>
-                                    {formatTime(msg.created_at)}
+                                    {msg.content}
+                                    <div style={{
+                                        fontSize: '0.65rem',
+                                        opacity: 0.7,
+                                        marginTop: '0.25rem',
+                                        textAlign: 'right'
+                                    }}>
+                                        {formatTime(msg.created_at)}
+                                    </div>
                                 </div>
+                                <div
+                                    style={{
+                                        width: '24px', height: '24px', borderRadius: '50%',
+                                        backgroundImage: senderData.photo ? `url(${senderData.photo})` : 'none',
+                                        backgroundColor: senderData.color || '#ccc',
+                                        backgroundSize: 'cover',
+                                        flexShrink: 0,
+                                        position: 'relative',
+                                    }}
+                                    className="chat-avatar"
+                                />
                             </div>
-                            <div
-                                style={{
-                                    width: '24px', height: '24px', borderRadius: '50%',
-                                    backgroundImage: senderData.photo ? `url(${senderData.photo})` : 'none',
-                                    backgroundColor: senderData.color,
-                                    backgroundSize: 'cover',
-                                    flexShrink: 0
-                                }}
-                                title={senderData.nickname || senderData.name}
-                            />
                         </div>
                     );
                 })}
@@ -183,7 +202,7 @@ const ChatModule = () => {
                     </button>
                 </form>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -10,8 +10,10 @@ const JournalModule = () => {
     const [entries, setEntries] = useState([]);
     const [newEntry, setNewEntry] = useState('');
     const [mood, setMood] = useState('neutral');
+    const [editingId, setEditingId] = useState(null);
     const [expandedEntry, setExpandedEntry] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     useRealtime('journal_entries', () => {
         fetchEntries();
@@ -40,28 +42,77 @@ const JournalModule = () => {
         }
     };
 
-    const saveEntry = async () => {
+    const handleSaveEntry = async () => {
         if (!newEntry.trim() || !coupleData?.couple?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('journal_entries')
-                .insert([{
-                    couple_id: coupleData.couple.id,
-                    text: newEntry,
-                    mood,
-                    date: new Date().toISOString()
-                }])
-                .select()
-                .single();
+            if (editingId) {
+                // Update
+                const { data, error } = await supabase
+                    .from('journal_entries')
+                    .update({
+                        text: newEntry,
+                        mood,
+                        // date: existing entry date is usually kept, or updated? User usually wants to just fix a typo. Let's keep original date unless user wants to change it (not in UI). Or update 'updated_at'?
+                        // Keeping original date.
+                    })
+                    .eq('id', editingId)
+                    .select()
+                    .single();
 
-            if (error) throw error;
-            setEntries([data, ...entries]);
+                if (error) throw error;
+                setEntries(entries.map(e => e.id === editingId ? data : e));
+                setEditingId(null);
+            } else {
+                // Insert
+                const { data, error } = await supabase
+                    .from('journal_entries')
+                    .insert([{
+                        couple_id: coupleData.couple.id,
+                        text: newEntry,
+                        mood,
+                        date: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                setEntries([data, ...entries]);
+            }
             setNewEntry('');
             setMood('neutral');
         } catch (error) {
             console.error('Error saving journal entry:', error);
         }
+    };
+
+    const deleteEntry = async (id) => {
+        try {
+            const { error } = await supabase.from('journal_entries').delete().eq('id', id);
+            if (error) throw error;
+            setEntries(entries.filter(e => e.id !== id));
+            if (editingId === id) {
+                setEditingId(null);
+                setNewEntry('');
+            }
+            setConfirmDeleteId(null);
+        } catch (error) {
+            console.error('Error deleting entry:', error);
+        }
+    };
+
+    const startEdit = (entry) => {
+        setNewEntry(entry.text);
+        setMood(entry.mood);
+        setEditingId(entry.id);
+        // Scroll to top to see editor? 
+        // Not strictly necessary but good UX if list is long.
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setNewEntry('');
+        setMood('neutral');
     };
 
     const getMoodIcon = (m) => {
@@ -77,7 +128,7 @@ const JournalModule = () => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ marginBottom: '1rem', background: 'var(--color-bg)', padding: '1rem', borderRadius: '12px' }}>
+            <div style={{ marginBottom: '1rem', background: 'var(--color-bg)', padding: '1rem', borderRadius: '12px', border: editingId ? '2px solid var(--color-primary)' : 'none' }}>
                 <textarea
                     value={newEntry}
                     onChange={(e) => setNewEntry(e.target.value)}
@@ -99,18 +150,25 @@ const JournalModule = () => {
                         <button onClick={() => setMood('neutral')} style={{ opacity: mood === 'neutral' ? 1 : 0.4 }}><Meh size={24} color="#fdcb6e" /></button>
                         <button onClick={() => setMood('sad')} style={{ opacity: mood === 'sad' ? 1 : 0.4 }}><Frown size={24} color="#636e72" /></button>
                     </div>
-                    <button
-                        onClick={saveEntry}
-                        disabled={!newEntry.trim()}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            background: 'var(--color-primary)', color: 'white',
-                            padding: '0.5rem 1rem', borderRadius: '20px',
-                            opacity: !newEntry.trim() ? 0.5 : 1
-                        }}
-                    >
-                        <Save size={16} /> Enregistrer
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {editingId && (
+                            <button onClick={cancelEdit} style={{ padding: '0.5rem 1rem', borderRadius: '20px', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>
+                                Annuler
+                            </button>
+                        )}
+                        <button
+                            onClick={handleSaveEntry}
+                            disabled={!newEntry.trim()}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                background: 'var(--color-primary)', color: 'white',
+                                padding: '0.5rem 1rem', borderRadius: '20px',
+                                opacity: !newEntry.trim() ? 0.5 : 1
+                            }}
+                        >
+                            <Save size={16} /> {editingId ? 'Mettre à jour' : 'Enregistrer'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -126,36 +184,64 @@ const JournalModule = () => {
                                 padding: '0.75rem',
                                 border: '1px solid var(--color-border)',
                                 borderRadius: '8px',
-                                cursor: 'pointer',
-                                transition: 'background 0.2s'
+                                cursor: 'default', // Changed to default
+                                transition: 'background 0.2s',
+                                position: 'relative'
                             }}
-                            onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}
+                            className="journal-entry-item"
+                        // Removed onClick for expansion to avoid conflict with buttons, using explicit expand button logic if needed or just always show brief and expand logic
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                                     {new Date(entry.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                                 </div>
-                                {getMoodIcon(entry.mood)}
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    {getMoodIcon(entry.mood)}
+                                    <div className="entry-actions" style={{ display: 'flex', gap: '0.25rem', opacity: confirmDeleteId === entry.id ? 1 : 0.5 }}>
+                                        {confirmDeleteId === entry.id ? (
+                                            <>
+                                                <span style={{ fontSize: '0.8rem', marginRight: '4px', color: '#ff7675' }}>Sûr ?</span>
+                                                <button onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id); }} style={{ background: '#ff7675', border: 'none', borderRadius: '4px', padding: '2px 6px', color: 'white', fontSize: '0.7rem', cursor: 'pointer' }}>Oui</button>
+                                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }} style={{ background: 'var(--color-border)', border: 'none', borderRadius: '4px', padding: '2px 6px', color: 'var(--color-text)', fontSize: '0.7rem', cursor: 'pointer' }}>Non</button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button onClick={(e) => { e.stopPropagation(); startEdit(entry); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }} title="Modifier">✏️</button>
+                                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(entry.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }} title="Supprimer">❌</button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div style={{
-                                fontSize: '0.9rem',
-                                lineHeight: '1.4',
-                                maxHeight: expandedEntry === entry.id ? 'none' : '40px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: expandedEntry === entry.id ? 'none' : 2,
-                                WebkitBoxOrient: 'vertical'
-                            }}>
+                            <div
+                                style={{
+                                    fontSize: '0.9rem',
+                                    lineHeight: '1.4',
+                                    maxHeight: expandedEntry === entry.id ? 'none' : '40px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: expandedEntry === entry.id ? 'none' : 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    cursor: 'pointer' // Click text to expand
+                                }}
+                                onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}
+                            >
                                 {entry.text}
                             </div>
                             {entry.text.length > 50 && (
-                                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.25rem', color: 'var(--color-text-muted)' }}>
+                                <div
+                                    style={{ display: 'flex', justifyContent: 'center', marginTop: '0.25rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                                    onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}
+                                >
                                     {expandedEntry === entry.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </div>
                             )}
                         </div>
                     ))}
+                    <style>{`
+                        .journal-entry-item:hover .entry-actions { opacity: 1 !important; }
+                    `}</style>
                 </div>
             </div>
         </div>

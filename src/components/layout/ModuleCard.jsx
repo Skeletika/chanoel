@@ -7,6 +7,15 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
     // We must apply these to the root div.
     // Our custom styles and animations must be on an inner div to avoid conflict.
 
+    // Extract RGL resize handle from children if present
+    const childrenArray = React.Children.toArray(children);
+    const resizeHandle = childrenArray.find(child =>
+        React.isValidElement(child) &&
+        child.props.className &&
+        child.props.className.includes('react-resizable-handle')
+    );
+    const content = childrenArray.filter(child => child !== resizeHandle);
+
     return (
         <div
             className={className}
@@ -24,15 +33,8 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                     flexDirection: 'column',
                     overflow: 'hidden',
                     height: '100%',
-                    transition: 'box-shadow 0.2s ease, transform 0.2s ease'
-                }}
-                onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+                    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                    position: 'relative' // Ensure absolute children are relative to this card
                 }}
             >
                 <div style={{
@@ -43,8 +45,8 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                     borderBottom: '1px solid var(--color-bg)',
                     paddingBottom: '0.5rem'
                 }}>
-                    <div className="drag-handle" style={{ cursor: 'grab', color: 'var(--color-text-muted)', marginRight: '0.5rem' }}>
-                        <GripHorizontal size={16} />
+                    <div className="drag-handle" style={{ cursor: 'grab', color: 'var(--color-text-muted)', marginRight: '0.5rem', padding: '4px' }}>
+                        <GripHorizontal size={20} />
                     </div>
                     <h3 style={{
                         fontSize: '1rem',
@@ -66,8 +68,45 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                         </button>
                     </div>
                 </div>
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                    {children}
+
+                {/* Content Area */}
+                <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+                    {content}
+                </div>
+
+                {/* RGL Resize Handle (Invisible but functional) */}
+                {resizeHandle && React.cloneElement(resizeHandle, {
+                    style: {
+                        ...resizeHandle.props.style,
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        zIndex: 10
+                    }
+                })}
+
+                {/* Visual Resize Handle (Visible Icon) */}
+                <div style={{
+                    position: 'absolute',
+                    bottom: '4px',
+                    right: '4px',
+                    width: '24px',
+                    height: '24px',
+                    pointerEvents: 'none',
+                    opacity: 0.8,
+                    background: 'var(--color-bg)',
+                    borderRadius: '50%',
+                    border: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v6" />
+                        <path d="M15 21h6" />
+                        <path d="M21 3l-18 18" />
+                    </svg>
                 </div>
             </div>
         </div>

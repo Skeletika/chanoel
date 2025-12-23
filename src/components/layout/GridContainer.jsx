@@ -11,44 +11,44 @@ const GridContainer = ({ children }) => {
     const { coupleData, updateCouple } = useCouple();
     const defaultLayouts = {
         lg: [
-            { i: 'gallery', x: 0, y: 0, w: 2, h: 2 },
-            { i: 'calendar', x: 2, y: 0, w: 2, h: 2 },
-            { i: 'timeline', x: 0, y: 2, w: 1, h: 2 },
-            { i: 'todo', x: 1, y: 2, w: 1, h: 2 },
-            { i: 'meals', x: 2, y: 2, w: 1, h: 2 },
-            { i: 'chat', x: 3, y: 2, w: 1, h: 2 },
-            { i: 'journal', x: 0, y: 4, w: 2, h: 2 },
-            { i: 'surprises', x: 2, y: 4, w: 2, h: 2 }
+            { i: 'gallery', x: 0, y: 0, w: 2, h: 3 },
+            { i: 'calendar', x: 2, y: 0, w: 2, h: 3 },
+            { i: 'timeline', x: 0, y: 3, w: 1, h: 3 },
+            { i: 'todo', x: 1, y: 3, w: 1, h: 3 },
+            { i: 'meals', x: 2, y: 3, w: 1, h: 3 },
+            { i: 'chat', x: 3, y: 3, w: 1, h: 3 },
+            { i: 'journal', x: 0, y: 6, w: 2, h: 3 },
+            { i: 'surprises', x: 2, y: 6, w: 2, h: 3 }
         ],
         md: [
-            { i: 'gallery', x: 0, y: 0, w: 2, h: 2 },
-            { i: 'calendar', x: 2, y: 0, w: 2, h: 2 },
-            { i: 'timeline', x: 0, y: 2, w: 1, h: 2 },
-            { i: 'todo', x: 1, y: 2, w: 1, h: 2 },
-            { i: 'meals', x: 2, y: 2, w: 1, h: 2 },
-            { i: 'chat', x: 3, y: 2, w: 1, h: 2 },
-            { i: 'journal', x: 0, y: 4, w: 2, h: 2 },
-            { i: 'surprises', x: 2, y: 4, w: 2, h: 2 }
+            { i: 'gallery', x: 0, y: 0, w: 2, h: 3 },
+            { i: 'calendar', x: 2, y: 0, w: 2, h: 3 },
+            { i: 'timeline', x: 0, y: 3, w: 1, h: 3 },
+            { i: 'todo', x: 1, y: 3, w: 1, h: 3 },
+            { i: 'meals', x: 2, y: 3, w: 1, h: 3 },
+            { i: 'chat', x: 3, y: 3, w: 1, h: 3 },
+            { i: 'journal', x: 0, y: 6, w: 2, h: 3 },
+            { i: 'surprises', x: 2, y: 6, w: 2, h: 3 }
         ],
         sm: [
-            { i: 'gallery', x: 0, y: 0, w: 2, h: 2 },
-            { i: 'calendar', x: 0, y: 2, w: 2, h: 2 },
-            { i: 'timeline', x: 0, y: 4, w: 1, h: 2 },
-            { i: 'todo', x: 1, y: 4, w: 1, h: 2 },
-            { i: 'meals', x: 0, y: 6, w: 1, h: 2 },
-            { i: 'chat', x: 1, y: 6, w: 1, h: 2 },
-            { i: 'journal', x: 0, y: 8, w: 2, h: 2 },
-            { i: 'surprises', x: 0, y: 10, w: 2, h: 2 }
+            { i: 'gallery', x: 0, y: 0, w: 2, h: 3 },
+            { i: 'calendar', x: 0, y: 3, w: 2, h: 3 },
+            { i: 'timeline', x: 0, y: 6, w: 1, h: 3 },
+            { i: 'todo', x: 1, y: 6, w: 1, h: 3 },
+            { i: 'meals', x: 0, y: 9, w: 1, h: 3 },
+            { i: 'chat', x: 1, y: 9, w: 1, h: 3 },
+            { i: 'journal', x: 0, y: 12, w: 2, h: 3 },
+            { i: 'surprises', x: 0, y: 15, w: 2, h: 3 }
         ],
         xs: [
-            { i: 'gallery', x: 0, y: 0, w: 1, h: 2 },
-            { i: 'calendar', x: 0, y: 2, w: 1, h: 2 },
-            { i: 'timeline', x: 0, y: 4, w: 1, h: 2 },
-            { i: 'todo', x: 0, y: 6, w: 1, h: 2 },
-            { i: 'meals', x: 0, y: 8, w: 1, h: 2 },
-            { i: 'chat', x: 0, y: 10, w: 1, h: 2 },
-            { i: 'journal', x: 0, y: 12, w: 1, h: 2 },
-            { i: 'surprises', x: 0, y: 14, w: 1, h: 2 }
+            { i: 'gallery', x: 0, y: 0, w: 1, h: 3 },
+            { i: 'calendar', x: 0, y: 3, w: 1, h: 3 },
+            { i: 'timeline', x: 0, y: 6, w: 1, h: 3 },
+            { i: 'todo', x: 0, y: 9, w: 1, h: 3 },
+            { i: 'meals', x: 0, y: 12, w: 1, h: 3 },
+            { i: 'chat', x: 0, y: 15, w: 1, h: 3 },
+            { i: 'journal', x: 0, y: 18, w: 1, h: 3 },
+            { i: 'surprises', x: 0, y: 21, w: 1, h: 3 }
         ]
     };
 

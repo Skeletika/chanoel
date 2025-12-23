@@ -85,12 +85,12 @@ const GalleryModule = () => {
         }
     };
 
-    const deletePhoto = async (photo) => {
-        if (!confirm('Voulez-vous vraiment supprimer cette photo ?')) return;
+    const [confirmingDelete, setConfirmingDelete] = useState(null);
 
+    const deletePhoto = async (photo) => {
+        // Direct call from lightbox or after confirmation
         try {
             // 1. Delete from Storage (Extract path from URL)
-            // URL format: .../storage/v1/object/public/images/coupleId/filename.ext
             const urlParts = photo.url.split('/images/');
             if (urlParts.length > 1) {
                 const storagePath = urlParts[1];
@@ -110,6 +110,7 @@ const GalleryModule = () => {
             if (error) throw error;
 
             if (selectedPhoto && selectedPhoto.id === photo.id) setSelectedPhoto(null);
+            setConfirmingDelete(null);
         } catch (error) {
             console.error('Error deleting photo:', error);
             alert('Erreur lors de la suppression');
@@ -173,16 +174,74 @@ const GalleryModule = () => {
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                                 position: 'relative',
-                                border: '1px solid var(--color-border)'
+                                border: '1px solid var(--color-border)',
+                                group: 'thumbnail'
                             }}
+                            className="gallery-item"
                         >
                             <img
                                 src={photo.url}
                                 alt="Souvenir"
                                 style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
-                                onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
-                                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
                             />
+
+                            {confirmingDelete === photo.id ? (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0, left: 0, right: 0, bottom: 0,
+                                    background: 'rgba(0,0,0,0.8)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    zIndex: 10
+                                }} onClick={e => e.stopPropagation()}>
+                                    <span style={{ color: 'white', fontSize: '0.7rem' }}>Supprimer ?</span>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => deletePhoto(photo)}
+                                            style={{ background: '#ff7675', border: 'none', borderRadius: '4px', padding: '2px 6px', color: 'white', fontSize: '0.7rem' }}
+                                        >Oui</button>
+                                        <button
+                                            onClick={() => setConfirmingDelete(null)}
+                                            style={{ background: 'white', border: 'none', borderRadius: '4px', padding: '2px 6px', color: 'black', fontSize: '0.7rem' }}
+                                        >Non</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfirmingDelete(photo.id);
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '4px',
+                                        right: '4px',
+                                        background: 'rgba(0,0,0,0.6)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '24px',
+                                        height: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        opacity: 0, // Hover handled by CSS in style tag below
+                                        transition: 'opacity 0.2s'
+                                    }}
+                                    className="delete-btn"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+
+                            <style>{`
+                                .gallery-item:hover .delete-btn { opacity: 1 !important; }
+                                .gallery-item:hover img { transform: scale(1.1); }
+                            `}</style>
                         </div>
                     ))}
                 </div>

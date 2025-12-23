@@ -9,6 +9,9 @@ const TimelineModule = () => {
     const [showAdd, setShowAdd] = useState(false);
     const [newEvent, setNewEvent] = useState({ title: '', date: '', emotion: 'heart', description: '' });
     const [loading, setLoading] = useState(true);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+    const [editingId, setEditingId] = useState(null);
 
     useEffect(() => {
         if (coupleData?.couple?.id) {
@@ -33,30 +36,81 @@ const TimelineModule = () => {
         }
     };
 
-    const addEvent = async (e) => {
+    const handleSaveEvent = async (e) => {
         e.preventDefault();
         if (!newEvent.title || !newEvent.date || !coupleData?.couple?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('timeline_events')
-                .insert([{
-                    couple_id: coupleData.couple.id,
-                    title: newEvent.title,
-                    date: newEvent.date,
-                    emotion: newEvent.emotion,
-                    description: newEvent.description
-                }])
-                .select()
-                .single();
+            if (editingId) {
+                // Update existing event
+                const { data, error } = await supabase
+                    .from('timeline_events')
+                    .update({
+                        title: newEvent.title,
+                        date: newEvent.date,
+                        emotion: newEvent.emotion,
+                        description: newEvent.description
+                    })
+                    .eq('id', editingId)
+                    .select()
+                    .single();
 
-            if (error) throw error;
-            setEvents([data, ...events].sort((a, b) => new Date(b.date) - new Date(a.date)));
+                if (error) throw error;
+                setEvents(events.map(ev => ev.id === editingId ? data : ev).sort((a, b) => new Date(b.date) - new Date(a.date)));
+                setEditingId(null);
+            } else {
+                // Create new event
+                const { data, error } = await supabase
+                    .from('timeline_events')
+                    .insert([{
+                        couple_id: coupleData.couple.id,
+                        title: newEvent.title,
+                        date: newEvent.date,
+                        emotion: newEvent.emotion,
+                        description: newEvent.description
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                setEvents([data, ...events].sort((a, b) => new Date(b.date) - new Date(a.date)));
+            }
             setShowAdd(false);
             setNewEvent({ title: '', date: '', emotion: 'heart', description: '' });
         } catch (error) {
-            console.error('Error adding timeline event:', error);
+            console.error('Error saving timeline event:', error);
         }
+    };
+
+    const deleteEvent = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('timeline_events')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            setEvents(events.filter(ev => ev.id !== id));
+            if (editingId === id) {
+                setEditingId(null);
+                setNewEvent({ title: '', date: '', emotion: 'heart', description: '' });
+                setShowAdd(false);
+            }
+            setConfirmDeleteId(null);
+        } catch (error) {
+            console.error('Error deleting event:', error);
+        }
+    };
+
+    const startEdit = (event) => {
+        setNewEvent({
+            title: event.title,
+            date: event.date,
+            emotion: event.emotion,
+            description: event.description || ''
+        });
+        setEditingId(event.id);
+        setShowAdd(true);
     };
 
     const getIcon = (emotion) => {
@@ -88,7 +142,11 @@ const TimelineModule = () => {
             </div>
 
             {showAdd && (
-                <form onSubmit={addEvent} style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                <form onSubmit={handleSaveEvent} style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>{editingId ? 'Modifier le souvenir' : 'Nouveau souvenir'}</h4>
+                        <button type="button" onClick={() => { setShowAdd(false); setEditingId(null); setNewEvent({ title: '', date: '', emotion: 'heart', description: '' }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
+                    </div>
                     <input
                         type="text" placeholder="Titre"
                         value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
@@ -115,13 +173,15 @@ const TimelineModule = () => {
                         value={newEvent.description} onChange={e => setNewEvent({ ...newEvent, description: e.target.value })}
                         style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', minHeight: '60px' }}
                     />
-                    <button type="submit" style={{ marginTop: '0.5rem', width: '100%', padding: '0.5rem', background: 'var(--color-primary)', color: 'white', borderRadius: '4px' }}>Enregistrer</button>
+                    <button type="submit" style={{ marginTop: '0.5rem', width: '100%', padding: '0.5rem', background: 'var(--color-primary)', color: 'white', borderRadius: '4px' }}>
+                        {editingId ? 'Mettre à jour' : 'Enregistrer'}
+                    </button>
                 </form>
             )}
 
             <div style={{ flex: 1, overflow: 'auto', paddingRight: '0.5rem' }}>
                 {events.map((event, index) => (
-                    <div key={event.id} style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', position: 'relative' }}>
+                    <div key={event.id} style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', position: 'relative', group: 'iso' }} className="timeline-item">
                         {/* Line */}
                         {index !== events.length - 1 && (
                             <div style={{
@@ -141,15 +201,36 @@ const TimelineModule = () => {
                         </div>
 
                         {/* Content */}
-                        <div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                {new Date(event.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{new Date(event.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <div className="event-actions" style={{ gap: '0.5rem', display: 'flex', opacity: confirmDeleteId === event.id ? 1 : 0.5 }}>
+                                    {confirmDeleteId === event.id ? (
+                                        <>
+                                            <span style={{ fontSize: '0.8rem', marginRight: '4px', color: '#ff7675' }}>Sûr ?</span>
+                                            <button onClick={() => deleteEvent(event.id)} style={{ background: '#ff7675', border: 'none', borderRadius: '4px', padding: '2px 6px', color: 'white', fontSize: '0.7rem', cursor: 'pointer' }}>Oui</button>
+                                            <button onClick={() => setConfirmDeleteId(null)} style={{ background: 'var(--color-border)', border: 'none', borderRadius: '4px', padding: '2px 6px', color: 'var(--color-text)', fontSize: '0.7rem', cursor: 'pointer' }}>Non</button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button onClick={() => startEdit(event)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-text)' }} title="Modifier">
+                                                ✏️
+                                            </button>
+                                            <button onClick={() => setConfirmDeleteId(event.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} title="Supprimer">
+                                                ❌
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                             <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{event.title}</h4>
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>{event.description}</p>
                         </div>
                     </div>
                 ))}
+                <style>{`
+                    .timeline-item:hover .event-actions { opacity: 1 !important; }
+                `}</style>
             </div>
         </div>
     );
