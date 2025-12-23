@@ -189,6 +189,19 @@ const CalendarModule = () => {
                                 <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', fontSize: '0.85rem' }}>
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: eventColors[ev.type] }} />
                                     <span style={{ flex: 1 }}>{ev.title}</span>
+                                    {ev.user_id && (
+                                        <div
+                                            title={coupleData.personA.id === ev.user_id ? coupleData.personA.name : coupleData.personB.name}
+                                            style={{
+                                                width: '24px', height: '24px', borderRadius: '50%',
+                                                backgroundImage: `url(${coupleData.personA.id === ev.user_id ? coupleData.personA.photo : coupleData.personB.photo})`,
+                                                backgroundSize: 'cover',
+                                                backgroundColor: coupleData.personA.id === ev.user_id ? coupleData.personA.color : coupleData.personB.color,
+                                                border: '1px solid var(--color-border)',
+                                                flexShrink: 0
+                                            }}
+                                        />
+                                    )}
                                     <button onClick={() => deleteEvent(ev.id)} style={{ color: '#ff7675' }}><Trash2 size={14} /></button>
                                 </div>
                             ))

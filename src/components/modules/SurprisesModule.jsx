@@ -11,6 +11,8 @@ const SurprisesModule = () => {
     const [showAdd, setShowAdd] = useState(false);
     const [newSurprise, setNewSurprise] = useState({ title: '', message: '', unlockDate: '' });
     const [loading, setLoading] = useState(true);
+    const [editingId, setEditingId] = useState(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     useRealtime('surprises', () => {
         fetchSurprises();
@@ -47,30 +49,81 @@ const SurprisesModule = () => {
         }
     };
 
-    const addSurprise = async (e) => {
+    const handleSaveSurprise = async (e) => {
         e.preventDefault();
         if (!newSurprise.title || !newSurprise.unlockDate || !coupleData?.couple?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('surprises')
-                .insert([{
-                    couple_id: coupleData.couple.id,
-                    user_id: session?.user?.id,
-                    title: newSurprise.title,
-                    message: newSurprise.message,
-                    unlock_date: new Date(newSurprise.unlockDate).toISOString()
-                }])
-                .select()
-                .single();
+            if (editingId) {
+                // Update
+                const { data, error } = await supabase
+                    .from('surprises')
+                    .update({
+                        title: newSurprise.title,
+                        message: newSurprise.message,
+                        unlock_date: new Date(newSurprise.unlockDate).toISOString()
+                    })
+                    .eq('id', editingId)
+                    .select()
+                    .single();
 
-            if (error) throw error;
-            setSurprises([...surprises, data]);
+                if (error) throw error;
+                setSurprises(surprises.map(s => s.id === editingId ? data : s));
+                setEditingId(null);
+            } else {
+                // Insert
+                const { data, error } = await supabase
+                    .from('surprises')
+                    .insert([{
+                        couple_id: coupleData.couple.id,
+                        user_id: session?.user?.id,
+                        title: newSurprise.title,
+                        message: newSurprise.message,
+                        unlock_date: new Date(newSurprise.unlockDate).toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                setSurprises([...surprises, data]);
+            }
             setShowAdd(false);
             setNewSurprise({ title: '', message: '', unlockDate: '' });
         } catch (error) {
-            console.error('Error adding surprise:', error);
+            console.error('Error saving surprise:', error);
         }
+    };
+
+    const deleteSurprise = async (id) => {
+        try {
+            const { error } = await supabase.from('surprises').delete().eq('id', id);
+            if (error) throw error;
+            setSurprises(surprises.filter(s => s.id !== id));
+            if (editingId === id) {
+                setEditingId(null);
+                setNewSurprise({ title: '', message: '', unlockDate: '' });
+                setShowAdd(false);
+            }
+            setConfirmDeleteId(null);
+        } catch (error) {
+            console.error('Error deleting surprise:', error);
+        }
+    };
+
+    const startEdit = (surprise) => {
+        // Format date for datetime-local input (YYYY-MM-DDTHH:mm)
+        // Adjust for timezone offset for simplistic local editing
+        const date = new Date(surprise.unlock_date);
+        const offset = date.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(date.getTime() - offset)).toISOString().slice(0, 16);
+
+        setNewSurprise({
+            title: surprise.title,
+            message: surprise.message,
+            unlockDate: localISOTime
+        });
+        setEditingId(surprise.id);
+        setShowAdd(true);
     };
 
     const isLocked = (date) => {
@@ -103,7 +156,11 @@ const SurprisesModule = () => {
             </div>
 
             {showAdd && (
-                <form onSubmit={addSurprise} style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                <form onSubmit={handleSaveSurprise} style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>{editingId ? 'Modifier' : 'Nouvelle surprise'}</h4>
+                        <button type="button" onClick={() => { setShowAdd(false); setEditingId(null); setNewSurprise({ title: '', message: '', unlockDate: '' }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
+                    </div>
                     <input
                         type="text" placeholder="Titre (visible)"
                         value={newSurprise.title} onChange={e => setNewSurprise({ ...newSurprise, title: e.target.value })}
@@ -122,7 +179,9 @@ const SurprisesModule = () => {
                         value={newSurprise.message} onChange={e => setNewSurprise({ ...newSurprise, message: e.target.value })}
                         style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', minHeight: '60px' }}
                     />
-                    <button type="submit" style={{ marginTop: '0.5rem', width: '100%', padding: '0.5rem', background: 'var(--color-primary)', color: 'white', borderRadius: '4px' }}>Cacher la surprise</button>
+                    <button type="submit" style={{ marginTop: '0.5rem', width: '100%', padding: '0.5rem', background: 'var(--color-primary)', color: 'white', borderRadius: '4px' }}>
+                        {editingId ? 'Mettre à jour' : 'Cacher la surprise'}
+                    </button>
                 </form>
             )}
 
@@ -132,6 +191,7 @@ const SurprisesModule = () => {
                     return (
                         <div
                             key={surprise.id}
+                            className="surprise-item"
                             style={{
                                 background: locked ? 'var(--color-bg)' : '#ffeaa7',
                                 borderRadius: '12px',
@@ -173,6 +233,30 @@ const SurprisesModule = () => {
                                     backgroundColor: coupleData.personA.id === surprise.user_id ? coupleData.personA.color : coupleData.personB.color,
                                     opacity: 0.5
                                 }} />
+                            )}
+
+                            {/* Owner Actions */}
+                            {session?.user?.id === surprise.user_id && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '4px',
+                                    right: '4px',
+                                    display: 'flex',
+                                    gap: '4px',
+                                    zIndex: 10
+                                }}>
+                                    {confirmDeleteId === surprise.id ? (
+                                        <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.95)', padding: '2px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                            <button onClick={() => deleteSurprise(surprise.id)} style={{ fontSize: '0.7rem', color: '#ff7675', border: '1px solid #ff7675', borderRadius: '4px', padding: '0 4px', cursor: 'pointer', background: 'white' }}>Oui</button>
+                                            <button onClick={() => setConfirmDeleteId(null)} style={{ fontSize: '0.7rem', color: '#636e72', border: '1px solid #636e72', borderRadius: '4px', padding: '0 4px', cursor: 'pointer', background: 'white' }}>Non</button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <button onClick={() => startEdit(surprise)} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title="Modifier">✏️</button>
+                                            <button onClick={() => setConfirmDeleteId(surprise.id)} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title="Supprimer">❌</button>
+                                        </>
+                                    )}
+                                </div>
                             )}
                         </div>
                     );

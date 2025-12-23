@@ -131,6 +131,7 @@ const GridContainer = ({ children }) => {
                     width={width}
                     onLayoutChange={onLayoutChange}
                     draggableHandle=".drag-handle"
+                    draggableCancel=".nodrag"
                     margin={[16, 16]}
                 >
                     {childrenWithProps}
