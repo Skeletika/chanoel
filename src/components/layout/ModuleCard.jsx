@@ -45,10 +45,10 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                     borderBottom: '1px solid var(--color-bg)',
                     paddingBottom: '0.5rem'
                 }}>
-                    <div className="drag-handle" style={{ cursor: 'grab', color: 'var(--color-text-muted)', marginRight: '0.5rem', padding: '4px' }}>
+                    <div className="drag-handle" style={{ cursor: 'grab', color: 'var(--color-text-muted)', marginRight: '0.5rem', padding: '4px', touchAction: 'none' }}>
                         <GripHorizontal size={20} />
                     </div>
-                    <h3 style={{
+                    <h3 className="nodrag" style={{
                         fontSize: '1rem',
                         fontWeight: 600,
                         color: 'var(--color-primary)',
@@ -57,7 +57,7 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                     }}>
                         {title}
                     </h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', color: 'var(--color-text-muted)' }}>
+                    <div className="nodrag" style={{ display: 'flex', gap: '0.5rem', color: 'var(--color-text-muted)' }}>
                         {onExpand && (
                             <button onClick={onExpand} style={{ color: 'inherit', cursor: 'pointer' }} title="Agrandir">
                                 <Maximize2 size={16} />
