@@ -3,12 +3,18 @@ import { Gift, Lock, Unlock, Clock, Plus, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
+import { useRealtime } from '../../hooks/useRealtime';
+
 const SurprisesModule = () => {
     const { coupleData } = useCouple();
     const [surprises, setSurprises] = useState([]);
     const [showAdd, setShowAdd] = useState(false);
     const [newSurprise, setNewSurprise] = useState({ title: '', message: '', unlockDate: '' });
     const [loading, setLoading] = useState(true);
+
+    useRealtime('surprises', () => {
+        fetchSurprises();
+    });
 
     useEffect(() => {
         if (coupleData?.couple?.id) {

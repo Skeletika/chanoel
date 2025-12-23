@@ -106,14 +106,16 @@ export const CoupleProvider = ({ children }) => {
           color: profile.color || '#e17055',
           photo: profile.avatar_url,
           id: profile.id,
-          username: profile.username
+          username: profile.username,
+          nickname: profile.nickname || ''
         },
         personB: {
           name: partnerProfile?.full_name || 'Partenaire',
           color: partnerProfile?.color || '#0984e3',
           photo: partnerProfile?.avatar_url,
           id: partnerProfile?.id,
-          username: partnerProfile?.username
+          username: partnerProfile?.username,
+          nickname: partnerProfile?.nickname || ''
         },
         couple: fetchedCouple,
         security: { pin: '', individualCodes: {} },
@@ -134,7 +136,12 @@ export const CoupleProvider = ({ children }) => {
     try {
       const { error } = await supabase.from('profiles').update(newData).eq('id', coupleData.personA.id);
       if (error) throw error;
-      setCoupleData(prev => ({ ...prev, personA: { ...prev.personA, ...newData } }));
+
+      const localUpdate = { ...newData };
+      if (newData.full_name) localUpdate.name = newData.full_name;
+      if (newData.avatar_url) localUpdate.photo = newData.avatar_url;
+
+      setCoupleData(prev => ({ ...prev, personA: { ...prev.personA, ...localUpdate } }));
     } catch (error) {
       console.error('Error updating Person A:', error);
       throw error;
@@ -145,7 +152,12 @@ export const CoupleProvider = ({ children }) => {
     try {
       const { error } = await supabase.from('profiles').update(newData).eq('id', coupleData.personB.id);
       if (error) throw error;
-      setCoupleData(prev => ({ ...prev, personB: { ...prev.personB, ...newData } }));
+
+      const localUpdate = { ...newData };
+      if (newData.full_name) localUpdate.name = newData.full_name;
+      if (newData.avatar_url) localUpdate.photo = newData.avatar_url;
+
+      setCoupleData(prev => ({ ...prev, personB: { ...prev.personB, ...localUpdate } }));
     } catch (error) {
       console.error('Error updating Person B:', error);
       throw error;

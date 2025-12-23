@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Plus, X, Trash2, Loader } from 'lucide-react
 import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
+import { useRealtime } from '../../hooks/useRealtime';
+
 const CalendarModule = () => {
     const { coupleData } = useCouple();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -11,6 +13,10 @@ const CalendarModule = () => {
     const [selectedDay, setSelectedDay] = useState(null);
     const [newEvent, setNewEvent] = useState({ title: '', date: '', type: 'appointment' });
     const [loading, setLoading] = useState(true);
+
+    useRealtime('events', () => {
+        fetchEvents();
+    });
 
     useEffect(() => {
         if (coupleData?.couple?.id) {

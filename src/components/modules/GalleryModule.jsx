@@ -3,12 +3,18 @@ import { Plus, X, Image as ImageIcon, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
+import { useRealtime } from '../../hooks/useRealtime';
+
 const GalleryModule = () => {
     const { coupleData } = useCouple();
     const [photos, setPhotos] = useState([]);
     const [selectedPhoto, setSelectedPhoto] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    useRealtime('photos', () => {
+        fetchPhotos();
+    });
 
     useEffect(() => {
         if (coupleData?.couple?.id) {
@@ -57,19 +63,20 @@ const GalleryModule = () => {
                 .getPublicUrl(filePath);
 
             // 3. Insert into DB
-            const { data: newPhoto, error: dbError } = await supabase
+            const { error: dbError } = await supabase
                 .from('photos')
                 .insert([{
                     couple_id: coupleData.couple.id,
                     url: publicUrl,
-                    caption: ''
-                }])
-                .select()
-                .single();
+                    caption: '',
+                    // We can store the path if we want easier deletion later, but extracting from URL is fine too
+                    // For now, let's keep it simple.
+                }]);
 
             if (dbError) throw dbError;
 
-            setPhotos([newPhoto, ...photos]);
+            // No need to manually update state, realtime will catch it, but optimistic update is nice.
+            // Actually, let's rely on realtime or fetch to be sure.
         } catch (error) {
             console.error('Error uploading photo:', error);
             alert('Erreur lors de l\'upload');
@@ -78,17 +85,31 @@ const GalleryModule = () => {
         }
     };
 
-    const deletePhoto = async (id) => {
+    const deletePhoto = async (photo) => {
+        if (!confirm('Voulez-vous vraiment supprimer cette photo ?')) return;
+
         try {
+            // 1. Delete from Storage (Extract path from URL)
+            // URL format: .../storage/v1/object/public/images/coupleId/filename.ext
+            const urlParts = photo.url.split('/images/');
+            if (urlParts.length > 1) {
+                const storagePath = urlParts[1];
+                const { error: storageError } = await supabase.storage
+                    .from('images')
+                    .remove([storagePath]);
+
+                if (storageError) console.warn('Storage delete error:', storageError);
+            }
+
+            // 2. Delete from DB
             const { error } = await supabase
                 .from('photos')
                 .delete()
-                .eq('id', id);
+                .eq('id', photo.id);
 
             if (error) throw error;
 
-            setPhotos(photos.filter(p => p.id !== id));
-            if (selectedPhoto && selectedPhoto.id === id) setSelectedPhoto(null);
+            if (selectedPhoto && selectedPhoto.id === photo.id) setSelectedPhoto(null);
         } catch (error) {
             console.error('Error deleting photo:', error);
             alert('Erreur lors de la suppression');
@@ -201,7 +222,7 @@ const GalleryModule = () => {
                             style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '4px' }}
                         />
                         <button
-                            onClick={() => deletePhoto(selectedPhoto.id)}
+                            onClick={() => deletePhoto(selectedPhoto)}
                             style={{
                                 position: 'absolute',
                                 bottom: '-3rem',

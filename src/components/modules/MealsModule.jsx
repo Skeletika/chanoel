@@ -3,12 +3,18 @@ import { Utensils, Shuffle, Plus, Trash2, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
+import { useRealtime } from '../../hooks/useRealtime';
+
 const MealsModule = () => {
     const { coupleData } = useCouple();
     const [meals, setMeals] = useState([]);
     const [newMeal, setNewMeal] = useState('');
     const [suggestion, setSuggestion] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    useRealtime('meals', () => {
+        fetchMeals();
+    });
 
     useEffect(() => {
         if (coupleData?.couple?.id) {

@@ -154,7 +154,7 @@ const ChatModule = () => {
                                     backgroundSize: 'cover',
                                     flexShrink: 0
                                 }}
-                                title={senderData.name}
+                                title={senderData.nickname || senderData.name}
                             />
                         </div>
                     );

@@ -3,12 +3,18 @@ import { CheckSquare, Square, Trash2, Plus, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
+import { useRealtime } from '../../hooks/useRealtime';
+
 const TodoModule = () => {
     const { coupleData } = useCouple();
     const [todos, setTodos] = useState([]);
     const [newTodo, setNewTodo] = useState('');
     const [category, setCategory] = useState('Maison');
     const [loading, setLoading] = useState(true);
+
+    useRealtime('todos', () => {
+        fetchTodos();
+    });
 
     useEffect(() => {
         if (coupleData?.couple?.id) {

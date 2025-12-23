@@ -11,11 +11,13 @@ import ChatModule from '../components/modules/ChatModule';
 import JournalModule from '../components/modules/JournalModule';
 import SurprisesModule from '../components/modules/SurprisesModule';
 import SettingsModal from '../components/ui/SettingsModal';
+import ProfileModal from '../components/ui/ProfileModal';
 import { Settings, LogOut } from 'lucide-react';
 
 const Dashboard = () => {
     const { coupleData, logout } = useCouple();
     const [showSettings, setShowSettings] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
 
     useEffect(() => {
         if (coupleData?.couple?.name) {
@@ -64,6 +66,7 @@ const Dashboard = () => {
                     <button onClick={logout} style={{ color: 'var(--color-text-muted)' }}><LogOut size={20} /></button>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <div
+                            onClick={() => setShowProfileModal(true)}
                             style={{
                                 width: '40px',
                                 height: '40px',
@@ -76,7 +79,7 @@ const Dashboard = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                                 position: 'relative',
                                 zIndex: 2,
-                                cursor: 'help'
+                                cursor: 'pointer'
                             }}
                             className="profile-icon"
                         >
@@ -99,6 +102,7 @@ const Dashboard = () => {
                             </div>
                         </div>
                         <div
+                            onClick={() => setShowProfileModal(true)}
                             style={{
                                 width: '40px',
                                 height: '40px',
@@ -112,7 +116,7 @@ const Dashboard = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                                 position: 'relative',
                                 zIndex: 1,
-                                cursor: 'help'
+                                cursor: 'pointer'
                             }}
                             className="profile-icon"
                         >
@@ -174,6 +178,7 @@ const Dashboard = () => {
 
             {/* Settings Modal */}
             {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+            {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
         </div>
     );
 };

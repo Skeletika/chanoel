@@ -3,6 +3,8 @@ import { BookOpen, Smile, Frown, Meh, Save, ChevronDown, ChevronUp, Loader } fro
 import { supabase } from '../../lib/supabase';
 import { useCouple } from '../../context/CoupleContext';
 
+import { useRealtime } from '../../hooks/useRealtime';
+
 const JournalModule = () => {
     const { coupleData } = useCouple();
     const [entries, setEntries] = useState([]);
@@ -10,6 +12,10 @@ const JournalModule = () => {
     const [mood, setMood] = useState('neutral');
     const [expandedEntry, setExpandedEntry] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    useRealtime('journal_entries', () => {
+        fetchEntries();
+    });
 
     useEffect(() => {
         if (coupleData?.couple?.id) {
