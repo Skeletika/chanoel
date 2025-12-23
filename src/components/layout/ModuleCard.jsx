@@ -1,7 +1,7 @@
 import React from 'react';
 import { MoreHorizontal, Maximize2, GripHorizontal } from 'lucide-react';
 
-const ModuleCard = ({ title, children, style, className, onExpand, ...props }) => {
+const ModuleCard = ({ title, children, style, className, onExpand, isLocked, ...props }) => {
     // Separate RGL props (style, className, etc.) from our visual card styling
     // RGL passes 'style' containing the transform for positioning, and 'className' for RGL classes.
     // We must apply these to the root div.
@@ -45,9 +45,11 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                     borderBottom: '1px solid var(--color-bg)',
                     paddingBottom: '0.5rem'
                 }}>
-                    <div className="drag-handle" style={{ cursor: 'grab', color: 'var(--color-text-muted)', marginRight: '0.5rem', padding: '4px', touchAction: 'none' }}>
-                        <GripHorizontal size={20} />
-                    </div>
+                    {!isLocked && (
+                        <div className="drag-handle" style={{ cursor: 'grab', color: 'var(--color-text-muted)', marginRight: '0.5rem', padding: '4px', touchAction: 'none' }}>
+                            <GripHorizontal size={20} />
+                        </div>
+                    )}
                     <h3 className="nodrag" style={{
                         fontSize: '1rem',
                         fontWeight: 600,
@@ -75,7 +77,7 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                 </div>
 
                 {/* RGL Resize Handle (Invisible hit area, made larger for easier grab) */}
-                {resizeHandle && React.cloneElement(resizeHandle, {
+                {!isLocked && resizeHandle && React.cloneElement(resizeHandle, {
                     style: {
                         ...resizeHandle.props.style,
                         position: 'absolute',
@@ -89,28 +91,30 @@ const ModuleCard = ({ title, children, style, className, onExpand, ...props }) =
                 })}
 
                 {/* Visual Resize Handle (Visible Icon) */}
-                <div style={{
-                    position: 'absolute',
-                    bottom: '6px',
-                    right: '6px',
-                    width: '24px',
-                    height: '24px',
-                    pointerEvents: 'none',
-                    opacity: 0.8,
-                    background: 'var(--color-bg)',
-                    borderRadius: '50%',
-                    border: '1px solid var(--color-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v6" />
-                        <path d="M15 21h6" />
-                        <path d="M21 3l-18 18" />
-                    </svg>
-                </div>
+                {!isLocked && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '6px',
+                        right: '6px',
+                        width: '24px',
+                        height: '24px',
+                        pointerEvents: 'none',
+                        opacity: 0.8,
+                        background: 'var(--color-bg)',
+                        borderRadius: '50%',
+                        border: '1px solid var(--color-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v6" />
+                            <path d="M15 21h6" />
+                            <path d="M21 3l-18 18" />
+                        </svg>
+                    </div>
+                )}
             </div>
         </div>
     );
