@@ -9,6 +9,7 @@ import TodoModule from '../components/modules/TodoModule';
 import MealsModule from '../components/modules/MealsModule';
 import ChatModule from '../components/modules/ChatModule';
 import JournalModule from '../components/modules/JournalModule';
+import NotesModule from '../components/modules/NotesModule';
 import SurprisesModule from '../components/modules/SurprisesModule';
 import SettingsModal from '../components/ui/SettingsModal';
 import ProfileModal from '../components/ui/ProfileModal';
@@ -169,6 +170,9 @@ const Dashboard = () => {
                     </ModuleCard>
                     <ModuleCard key="journal" title="Journal">
                         <JournalModule />
+                    </ModuleCard>
+                    <ModuleCard key="notes" title="Notes">
+                        <NotesModule />
                     </ModuleCard>
                     <ModuleCard key="surprises" title="Surprises">
                         <SurprisesModule />
