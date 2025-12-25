@@ -1,0 +1,21 @@
+{
+    "name": "Notre Espace",
+    "short_name": "Notre Espace",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#121212",
+    "theme_color": "#1e1e1e",
+    "description": "Notre espace de couple partagé.",
+    "icons": [
+        {
+            "src": "/vite.svg",
+            "type": "image/svg+xml",
+            "sizes": "192x192"
+        },
+        {
+            "src": "/vite.svg",
+            "type": "image/svg+xml",
+            "sizes": "512x512"
+        }
+    ]
+}
