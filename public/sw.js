@@ -1,13 +1,12 @@
-// Service Worker Minimal & Propre
-const CACHE_NAME = 'notre-espace-v1';
+const CACHE_NAME = 'notre-espace-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/vite.svg',
-  // Ajoutez ici d'autres ressources statiques essentielles si nécessaire
+  '/icon-512.svg',
+  '/heart.svg',
+  '/vite.svg'
 ];
 
-// 1. Installation : On met en cache les fichiers essentiels
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -15,10 +14,9 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  self.skipWaiting(); // Force le nouveau SW à s'activer immédiatement
+  self.skipWaiting();
 });
 
-// 2. Activation : On nettoie les anciens caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
@@ -32,41 +30,43 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim(); // Prend le contrôle des pages immédiatement
+  self.clients.claim();
 });
 
-// 3. Interception des requêtes (Stratégie hybride)
-// - Pour la navigation et les assets statiques : Cache First, fall back to Network
-// - Pour les API (commençant par /rest/v1/ ou autre) : Network Only (toujours frais)
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Ignorer les requêtes API Supabase ou autres requêtes dynamiques
-  // Adaptez ce filtre selon votre URL Supabase
-  if (url.origin.includes('supabase.co')) {
-    return; // Laisser le navigateur gérer normalement (Network only)
+  // Check if it's a navigation request (for HTML)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          return caches.match('/index.html');
+        })
+    );
+    return;
   }
 
-  // Pour le reste (HTML, JS, CSS, Images locales)
+  // Allow Supabase API
+  if (url.origin.includes('supabase.co')) {
+    return;
+  }
+
+  // Cache First for Assets
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Si trouvé dans le cache, on le retourne
-      if (response) {
-        return response;
-      }
-      // Sinon, on va chercher sur le réseau
-      return fetch(event.request);
+      return response || fetch(event.request);
     })
   );
 });
 
-// 4. Gestion des Notifications Push
+// Push Logic (Receiver)
 self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: '/heart.svg', // Remplacez par votre icône
+      icon: '/icon-512.svg',
       badge: '/heart.svg',
       data: {
         url: data.url || '/'
@@ -79,10 +79,22 @@ self.addEventListener('push', (event) => {
   }
 });
 
-// 5. Clic sur la notification
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+        // Check if there is already a window/tab open with the target URL
+        for (let i = 0; i < windowClients.length; i++) {
+            const client = windowClients[i];
+            // If so, just focus it.
+            if (client.url === event.notification.data.url && 'focus' in client) {
+                return client.focus();
+            }
+        }
+        // If not, open a new window.
+        if (clients.openWindow) {
+            return clients.openWindow(event.notification.data.url);
+        }
+    })
   );
 });

@@ -8,12 +8,12 @@
     "description": "Notre espace de couple partagé.",
     "icons": [
         {
-            "src": "/heart.svg",
+            "src": "/icon-512.svg",
             "type": "image/svg+xml",
             "sizes": "192x192"
         },
         {
-            "src": "/heart.svg",
+            "src": "/icon-512.svg",
             "type": "image/svg+xml",
             "sizes": "512x512"
         }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Shield, Trash2, RefreshCw, Sun, Moon, Palette } from 'lucide-react';
+import { X, Save, Shield, Trash2, RefreshCw, Sun, Moon, Palette, Bell } from 'lucide-react';
 import { useCouple } from '../../context/CoupleContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -459,6 +459,53 @@ const SettingsModal = ({ onClose }) => {
                                     <RefreshCw size={16} />
                                 </button>
                             </div>
+                        </div>
+                    </section>
+
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '2rem 0' }} />
+
+                    {/* Notifications Section */}
+                    <section style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Bell size={18} /> Notifications
+                        </h3>
+                        <div style={{ background: 'var(--color-surface)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <span style={{ color: 'var(--color-text)' }}>Activer sur cet appareil</span>
+                                <button
+                                    onClick={async () => {
+                                        if (!('Notification' in window)) {
+                                            alert("Notifications non supportées sur ce navigateur.");
+                                            return;
+                                        }
+                                        if (Notification.permission === 'granted') {
+                                            alert("Les notifications sont déjà activées ! ✅");
+                                        } else {
+                                            const perm = await Notification.requestPermission();
+                                            if (perm === 'granted') {
+                                                alert("Félicitations ! Vous recevrez désormais les notifications. 🔔");
+                                                // TODO: Save Subscription to DB here in next step
+                                            } else {
+                                                alert("Permission refusée. Vérifiez vos paramètres navigateur. 🚫");
+                                            }
+                                        }
+                                    }}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: Notification.permission === 'granted' ? '#00b894' : 'var(--color-primary)',
+                                        color: 'white',
+                                        borderRadius: '20px',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    {Notification.permission === 'granted' ? 'Activé' : 'Activer'}
+                                </button>
+                            </div>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                Recevez des alertes pour les nouveaux messages et notes. (Nécessite une installation PWA sur iOS).
+                            </p>
                         </div>
                     </section>
 
