@@ -66,8 +66,8 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: '/vite.svg', // Remplacez par votre icône
-      badge: '/vite.svg',
+      icon: '/heart.svg', // Remplacez par votre icône
+      badge: '/heart.svg',
       data: {
         url: data.url || '/'
       }
