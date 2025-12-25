@@ -45,7 +45,7 @@ export const subscribeUserToPush = async () => {
         
         const sub = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5NkohOc' // Public Test Key (Example)
+            applicationServerKey: 'BOB8cDNa7fPe3p7FklnC11Hq4IL9SrwlOn97ep6eDCKwNF7f0zrvdFG6Y-4ose4IMEq7hISnfl-HgJ5EsPe91C8'
         });
 
         // Save to DB
