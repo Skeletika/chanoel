@@ -2,7 +2,7 @@ const CACHE_NAME = 'notre-espace-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/icon-512.svg',
+  '/icon-512.png',
   '/heart.svg',
   '/vite.svg'
 ];

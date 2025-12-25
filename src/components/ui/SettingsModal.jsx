@@ -483,8 +483,12 @@ const SettingsModal = ({ onClose }) => {
                                         } else {
                                             const perm = await Notification.requestPermission();
                                             if (perm === 'granted') {
-                                                alert("Félicitations ! Vous recevrez désormais les notifications. 🔔");
-                                                // TODO: Save Subscription to DB here in next step
+                                                // Save Subscription to DB
+                                                import('../../utils/pwaUtils').then(async ({ subscribeUserToPush }) => {
+                                                    const sub = await subscribeUserToPush();
+                                                    if (sub) alert("Félicitations ! Vous recevrez désormais les notifications. 🔔");
+                                                    else alert("Notifications activées, mais l'enregistrement serveur a échoué (Clé VAPID manquante ?).");
+                                                });
                                             } else {
                                                 alert("Permission refusée. Vérifiez vos paramètres navigateur. 🚫");
                                             }

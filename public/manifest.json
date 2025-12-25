@@ -1,6 +1,6 @@
 {
-    "name": "Notre Espace",
-    "short_name": "Notre Espace",
+    "name": "Ideal",
+    "short_name": "Ideal",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#121212",
@@ -8,13 +8,13 @@
     "description": "Notre espace de couple partagé.",
     "icons": [
         {
-            "src": "/icon-512.svg",
-            "type": "image/svg+xml",
+            "src": "/icon-512.png",
+            "type": "image/png",
             "sizes": "192x192"
         },
         {
-            "src": "/icon-512.svg",
-            "type": "image/svg+xml",
+            "src": "/icon-512.png",
+            "type": "image/png",
             "sizes": "512x512"
         }
     ]
