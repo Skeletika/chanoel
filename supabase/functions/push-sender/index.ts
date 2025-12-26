@@ -76,10 +76,10 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Sending push to partner: ${partnerId}`);
 
-        // 3. Get Partner's Subscriptions AND Preferences
+        // 3. Get Partner's Subscriptions
         const { data: subs } = await supabase
             .from('push_subscriptions')
-            .select('subscription, preferences')
+            .select('subscription')
             .eq('user_id', partnerId);
 
         if (!subs || subs.length === 0) {
@@ -90,41 +90,29 @@ Deno.serve(async (req: Request) => {
         let title = "Notre Espace";
         let body = "Nouveau contenu disponible !";
         let url = "/";
-        let type = "general"; // chat, notes, calendar, timeline
 
+        // Custom messages based on table
         if (table === 'messages') {
-            type = 'chat';
             title = `Nouveau message de ${senderName}`;
             body = record.content ? record.content.substring(0, 50) : "Vous avez reçu un message.";
             url = "/chat";
         } else if (table === 'notes') {
-            type = 'notes';
             title = `Nouvelle note de ${senderName}`;
             body = record.content ? record.content.substring(0, 50) : "Une note a été ajoutée.";
             url = "/dashboard";
         } else if (table === 'events') {
-            type = 'calendar';
             title = `Nouvel événement : ${record.title}`;
             body = `Le ${record.date} à ${record.time || 'toute la journée'}`;
             url = "/calendar";
         } else if (table === 'todos') {
-            type = 'todos'; // We might group this under 'notes' or 'calendar' if no specific toggle exists, but user asked for "Tasks". 
-            // Current UI has: chat, notes, calendar, timeline. 
-            // Let's assume 'notes' covers generic dashboard updates or add a new category later. 
-            // For now, let's map 'todos' to 'notes' or always send? 
-            // User UI has: Chat, Notes, Calendrier, Histoire.
-            // Let's map todos -> notes for now as it's dashboard content.
-            type = 'notes';
             title = `Nouvelle tâche : ${record.text.substring(0, 30)}`;
             body = `Catégorie : ${record.category || 'Général'}`;
             url = "/dashboard";
         } else if (table === 'timeline_events') {
-            type = 'timeline';
             title = `Nouveau souvenir : ${record.title}`;
             body = `Ajouté à votre histoire du ${record.date}`;
             url = "/timeline";
         } else if (table === 'surprises') {
-            type = 'surprises'; // Always send surprises? Or map to timeline? Let's always send for now.
             title = `Une surprise vous attend ! 🎁`;
             body = `${record.title}`;
             url = "/surprises";
@@ -137,17 +125,6 @@ Deno.serve(async (req: Request) => {
         });
 
         const sendPromises = subs.map(subRow => {
-            // Check Preferences
-            const prefs = subRow.preferences || {};
-
-            // If the type is monitored in prefs and set to strictly FALSE, skip.
-            // Default to true if pref is missing.
-            // Special types like 'surprises' might bypass checks or default to true.
-            if (type !== 'general' && type !== 'surprises' && prefs[type] === false) {
-                console.log(`Skipping notification (${type}) for user preference.`);
-                return Promise.resolve();
-            }
-
             const sub = subRow.subscription;
             // Check if subscription is valid JSON or object
             const subObj = (typeof sub === 'string') ? JSON.parse(sub) : sub;
