@@ -1,0 +1,173 @@
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/getting_started/setup_your_environment
+// This function must be deployed to Supabase Edge Functions.
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import webpush from 'https://esm.sh/web-push@3.6.7';
+
+const Deno = globalThis.Deno || { env: { get: () => '' } };
+
+console.log("Hello from push-sender!");
+
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5NkohOc'; // Replace or set in secrets
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        'mailto:contact@notre-espace.app',
+        VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY
+    );
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+Deno.serve(async (req: Request) => {
+    try {
+        const payload = await req.json();
+        console.log("Webhook received:", payload);
+
+        // payload.record is the new row inserted
+        const record = payload.record;
+        const table = payload.table; // 'messages', 'notes', etc.
+
+        if (!record || !record.user_id) {
+            return new Response("No user_id in record", { status: 200 });
+        }
+
+        // 1. Find the Sender (to get their name) and the Couple
+        // We assume 'messages' and 'notes' have 'user_id'
+        const { data: senderUser } = await supabase.auth.admin.getUserById(record.user_id);
+        const senderName = senderUser?.user?.user_metadata?.name || "Votre partenaire";
+
+        // 2. Find the RECIPIENT (The other person in the couple)
+        // We need to know the couple_id.
+        // Assuming 'messages' has 'couple_id'.
+        // If not, we find the couple from the user.
+        let coupleId = record.couple_id;
+        if (!coupleId) {
+            // logic to finding couple if missing from record (optional)
+        }
+
+        // Simplification: We look for ALL subscriptions that arc NOT the sender.
+        // In a real multi-tenant app, we would filter by couple_id.
+        // Query: Get subscriptions where user_id != sender_id 
+        // AND user_id IN (SELECT user_id FROM couple_members WHERE couple_id = ...)
+
+        // For this specific 'Notre Espace' mono-couple-ish setup, 
+        // we can just find the partner.
+
+        // Let's rely on finding subscriptions for users that are in the same couple.
+        const { data: coupleData } = await supabase
+            .from('couples')
+            .select('partner1_id, partner2_id')
+            .eq('id', coupleId)
+            .single();
+
+        if (!coupleData) return new Response("Couple not found", { status: 200 });
+
+        const partnerId = (coupleData.partner1_id === record.user_id)
+            ? coupleData.partner2_id
+            : coupleData.partner1_id;
+
+        if (!partnerId) return new Response("No partner found", { status: 200 });
+
+        console.log(`Sending push to partner: ${partnerId}`);
+
+        // 3. Get Partner's Subscriptions AND Preferences
+        const { data: subs } = await supabase
+            .from('push_subscriptions')
+            .select('subscription, preferences')
+            .eq('user_id', partnerId);
+
+        if (!subs || subs.length === 0) {
+            return new Response("No subscriptions for partner", { status: 200 });
+        }
+
+        // 4. Send the Push
+        let title = "Notre Espace";
+        let body = "Nouveau contenu disponible !";
+        let url = "/";
+        let type = "general"; // chat, notes, calendar, timeline
+
+        if (table === 'messages') {
+            type = 'chat';
+            title = `Nouveau message de ${senderName}`;
+            body = record.content ? record.content.substring(0, 50) : "Vous avez reçu un message.";
+            url = "/chat";
+        } else if (table === 'notes') {
+            type = 'notes';
+            title = `Nouvelle note de ${senderName}`;
+            body = record.content ? record.content.substring(0, 50) : "Une note a été ajoutée.";
+            url = "/dashboard";
+        } else if (table === 'events') {
+            type = 'calendar';
+            title = `Nouvel événement : ${record.title}`;
+            body = `Le ${record.date} à ${record.time || 'toute la journée'}`;
+            url = "/calendar";
+        } else if (table === 'todos') {
+            type = 'todos'; // We might group this under 'notes' or 'calendar' if no specific toggle exists, but user asked for "Tasks". 
+            // Current UI has: chat, notes, calendar, timeline. 
+            // Let's assume 'notes' covers generic dashboard updates or add a new category later. 
+            // For now, let's map 'todos' to 'notes' or always send? 
+            // User UI has: Chat, Notes, Calendrier, Histoire.
+            // Let's map todos -> notes for now as it's dashboard content.
+            type = 'notes';
+            title = `Nouvelle tâche : ${record.text.substring(0, 30)}`;
+            body = `Catégorie : ${record.category || 'Général'}`;
+            url = "/dashboard";
+        } else if (table === 'timeline_events') {
+            type = 'timeline';
+            title = `Nouveau souvenir : ${record.title}`;
+            body = `Ajouté à votre histoire du ${record.date}`;
+            url = "/timeline";
+        } else if (table === 'surprises') {
+            type = 'surprises'; // Always send surprises? Or map to timeline? Let's always send for now.
+            title = `Une surprise vous attend ! 🎁`;
+            body = `${record.title}`;
+            url = "/surprises";
+        }
+
+        const notificationPayload = JSON.stringify({
+            title,
+            body,
+            url
+        });
+
+        const sendPromises = subs.map(subRow => {
+            // Check Preferences
+            const prefs = subRow.preferences || {};
+
+            // If the type is monitored in prefs and set to strictly FALSE, skip.
+            // Default to true if pref is missing.
+            // Special types like 'surprises' might bypass checks or default to true.
+            if (type !== 'general' && type !== 'surprises' && prefs[type] === false) {
+                console.log(`Skipping notification (${type}) for user preference.`);
+                return Promise.resolve();
+            }
+
+            const sub = subRow.subscription;
+            // Check if subscription is valid JSON or object
+            const subObj = (typeof sub === 'string') ? JSON.parse(sub) : sub;
+
+            return webpush.sendNotification(subObj, notificationPayload)
+                .catch(err => {
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        console.log('Subscription expired/invalid, deleting...');
+                        return supabase.from('push_subscriptions').delete().match({ subscription: sub });
+                    }
+                    console.error("Error sending push:", err);
+                });
+        });
+
+        await Promise.all(sendPromises);
+
+        return new Response("Push sent!", { status: 200 });
+
+    } catch (error) {
+        console.error(error);
+        return new Response(error.message, { status: 500 });
+    }
+});
