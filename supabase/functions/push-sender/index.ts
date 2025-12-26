@@ -43,36 +43,30 @@ Deno.serve(async (req: Request) => {
         const senderName = senderUser?.user?.user_metadata?.name || "Votre partenaire";
 
         // 2. Find the RECIPIENT (The other person in the couple)
-        // We need to know the couple_id.
-        // Assuming 'messages' has 'couple_id'.
-        // If not, we find the couple from the user.
+        // We assume 'messages' and 'notes' have 'couple_id'.
+        // Logic: Find the profile that has the same couple_id but different user_id.
+
         let coupleId = record.couple_id;
         if (!coupleId) {
-            // logic to finding couple if missing from record (optional)
+            console.error("No couple_id in record");
+            return new Response("No couple_id in record", { status: 200 });
         }
 
-        // Simplification: We look for ALL subscriptions that arc NOT the sender.
-        // In a real multi-tenant app, we would filter by couple_id.
-        // Query: Get subscriptions where user_id != sender_id 
-        // AND user_id IN (SELECT user_id FROM couple_members WHERE couple_id = ...)
+        // Find the partner profile
+        const { data: partnerProfiles } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('couple_id', coupleId)
+            .neq('id', record.user_id) // Exclude sender
+            .limit(1);
 
-        // For this specific 'Notre Espace' mono-couple-ish setup, 
-        // we can just find the partner.
+        if (!partnerProfiles || partnerProfiles.length === 0) {
+            console.log("No partner found for couple " + coupleId);
+            return new Response("No partner found", { status: 200 });
+        }
 
-        // Let's rely on finding subscriptions for users that are in the same couple.
-        const { data: coupleData } = await supabase
-            .from('couples')
-            .select('partner1_id, partner2_id')
-            .eq('id', coupleId)
-            .single();
+        const partnerId = partnerProfiles[0].id;
 
-        if (!coupleData) return new Response("Couple not found", { status: 200 });
-
-        const partnerId = (coupleData.partner1_id === record.user_id)
-            ? coupleData.partner2_id
-            : coupleData.partner1_id;
-
-        if (!partnerId) return new Response("No partner found", { status: 200 });
 
         console.log(`Sending push to partner: ${partnerId}`);
 
