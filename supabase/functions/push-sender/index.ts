@@ -70,7 +70,7 @@ serve(async (req: Request) => {
         try {
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .select('name, username')
+                .select('nickname')
                 .eq('id', senderId)
                 .single();
 
@@ -78,7 +78,7 @@ serve(async (req: Request) => {
                 console.error("Error fetching profile:", profileError);
             } else if (profileData) {
                 // Prioritize name, fallback to username, then default
-                senderName = profileData.name || profileData.username || senderName;
+                senderName = profileData.nickname || senderName;
             }
         } catch (err) {
             console.error("Profile fetch exception:", err);
