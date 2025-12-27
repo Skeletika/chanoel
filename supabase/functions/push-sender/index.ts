@@ -52,13 +52,20 @@ serve(async (req: Request) => {
 
         const { record, table } = payload;
 
-        if (!record || !record.user_id) {
-            console.log("⚠️ Skipping: No user_id in record (or not an INSERT?)");
+        if (!record) {
+            console.log("⚠️ Skipping: No record found");
+            return new Response("Skipped", { status: 200 });
+        }
+
+        const senderId = record.user_id || record.sender_id || record.author_id || record.created_by;
+
+        if (!senderId) {
+            console.log("⚠️ Skipping: No sender ID found in record:", record);
             return new Response("Skipped", { status: 200 });
         }
 
         // 1. Identify Sender
-        const { data: senderUser, error: senderError } = await supabase.auth.admin.getUserById(record.user_id);
+        const { data: senderUser, error: senderError } = await supabase.auth.admin.getUserById(senderId);
         if (senderError) console.error("Error fetching sender:", senderError);
         const senderName = senderUser?.user?.user_metadata?.name || "Votre partenaire";
         console.log("👤 Sender:", senderName);
@@ -67,7 +74,7 @@ serve(async (req: Request) => {
         let coupleId = record.couple_id;
         if (!coupleId) {
             // Fallback: Try to find couple via profile if not in record
-            const { data: profile } = await supabase.from('profiles').select('couple_id').eq('id', record.user_id).single();
+            const { data: profile } = await supabase.from('profiles').select('couple_id').eq('id', senderId).single();
             coupleId = profile?.couple_id;
         }
 
@@ -82,7 +89,7 @@ serve(async (req: Request) => {
             .from('profiles')
             .select('id')
             .eq('couple_id', coupleId)
-            .neq('id', record.user_id)
+            .neq('id', senderId)
             .limit(1);
 
         if (partnerError) console.error("Error finding partner:", partnerError);
