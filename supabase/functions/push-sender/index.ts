@@ -1,144 +1,171 @@
-// Follow this setup guide to integrate the Deno runtime into your application:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This function must be deployed to Supabase Edge Functions.
+// Setup: https://supabase.com/docs/guides/functions/quickstart
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import webpush from 'https://esm.sh/web-push@3.6.7';
+import { createClient } from 'npm:@supabase/supabase-js@2.39.3';
+import webpush from 'npm:web-push@3.6.7';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const Deno = globalThis.Deno || { env: { get: () => '' } };
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') as string;
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') as string;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
 
-console.log("Hello from push-sender!");
-
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5NkohOc'; // Replace or set in secrets
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-
+// Initialize WebPush
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(
-        'mailto:contact@notre-espace.app',
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY
-    );
+    try {
+        webpush.setVapidDetails(
+            'mailto:contact@notre-espace.app',
+            VAPID_PUBLIC_KEY,
+            VAPID_PRIVATE_KEY
+        );
+        console.log("✅ WebPush Configured");
+    } catch (err) {
+        console.error("❌ WebPush Config Error:", err);
+    }
+} else {
+    console.error("❌ Missing VAPID Keys in Environment");
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-Deno.serve(async (req: Request) => {
-    try {
-        const payload = await req.json();
-        console.log("Webhook received:", payload);
+interface WebhookPayload {
+    table: string;
+    record: {
+        id: string;
+        user_id?: string;
+        couple_id?: string;
+        content?: string;
+        text?: string;
+        title?: string;
+        date?: string;
+        time?: string;
+        category?: string;
+        [key: string]: any;
+    };
+    type: 'INSERT' | 'UPDATE' | 'DELETE';
+    schema: string;
+}
 
-        // payload.record is the new row inserted
-        const record = payload.record;
-        const table = payload.table; // 'messages', 'notes', etc.
+serve(async (req: Request) => {
+    try {
+        const payload: WebhookPayload = await req.json();
+        console.log("📩 Webhook Received:", JSON.stringify(payload));
+
+        const { record, table } = payload;
 
         if (!record || !record.user_id) {
-            return new Response("No user_id in record", { status: 200 });
+            console.log("⚠️ Skipping: No user_id in record (or not an INSERT?)");
+            return new Response("Skipped", { status: 200 });
         }
 
-        // 1. Find the Sender (to get their name) and the Couple
-        // We assume 'messages' and 'notes' have 'user_id'
-        const { data: senderUser } = await supabase.auth.admin.getUserById(record.user_id);
+        // 1. Identify Sender
+        const { data: senderUser, error: senderError } = await supabase.auth.admin.getUserById(record.user_id);
+        if (senderError) console.error("Error fetching sender:", senderError);
         const senderName = senderUser?.user?.user_metadata?.name || "Votre partenaire";
+        console.log("👤 Sender:", senderName);
 
-        // 2. Find the RECIPIENT (The other person in the couple)
-        // We assume 'messages' and 'notes' have 'couple_id'.
-        // Logic: Find the profile that has the same couple_id but different user_id.
-
+        // 2. Identify Couple ID
         let coupleId = record.couple_id;
         if (!coupleId) {
-            console.error("No couple_id in record");
-            return new Response("No couple_id in record", { status: 200 });
+            // Fallback: Try to find couple via profile if not in record
+            const { data: profile } = await supabase.from('profiles').select('couple_id').eq('id', record.user_id).single();
+            coupleId = profile?.couple_id;
         }
 
-        // Find the partner profile
-        const { data: partnerProfiles } = await supabase
+        if (!coupleId) {
+            console.error("❌ No couple_id found.");
+            return new Response("No couple_id found", { status: 200 });
+        }
+
+        // 3. Find Recipient (Partner)
+        // We want the profile in the SAME couple, but NOT the sender.
+        const { data: partnerProfiles, error: partnerError } = await supabase
             .from('profiles')
             .select('id')
             .eq('couple_id', coupleId)
-            .neq('id', record.user_id) // Exclude sender
+            .neq('id', record.user_id)
             .limit(1);
 
+        if (partnerError) console.error("Error finding partner:", partnerError);
+
         if (!partnerProfiles || partnerProfiles.length === 0) {
-            console.log("No partner found for couple " + coupleId);
+            console.log("⚠️ No partner found in this couple (User is alone?)");
             return new Response("No partner found", { status: 200 });
         }
 
         const partnerId = partnerProfiles[0].id;
+        console.log("🎯 Target Partner ID:", partnerId);
 
-
-        console.log(`Sending push to partner: ${partnerId}`);
-
-        // 3. Get Partner's Subscriptions
-        const { data: subs } = await supabase
+        // 4. Get Subscriptions
+        const { data: subs, error: subError } = await supabase
             .from('push_subscriptions')
             .select('subscription')
             .eq('user_id', partnerId);
 
+        if (subError) console.error("Error fetching subs:", subError);
+
         if (!subs || subs.length === 0) {
-            return new Response("No subscriptions for partner", { status: 200 });
+            console.log("📭 Partner has no push subscriptions.");
+            return new Response("No subscriptions", { status: 200 });
         }
 
-        // 4. Send the Push
+        // 5. Prepare Notification
         let title = "Notre Espace";
-        let body = "Nouveau contenu disponible !";
+        let body = "Nouveau contenu !";
         let url = "/";
 
-        // Custom messages based on table
         if (table === 'messages') {
             title = `Nouveau message de ${senderName}`;
-            body = record.content ? record.content.substring(0, 50) : "Vous avez reçu un message.";
+            body = record.content ? record.content.substring(0, 50) : "Message reçu";
             url = "/chat";
         } else if (table === 'notes') {
             title = `Nouvelle note de ${senderName}`;
-            body = record.content ? record.content.substring(0, 50) : "Une note a été ajoutée.";
+            body = record.content ? record.content.substring(0, 50) : "Note ajoutée";
             url = "/dashboard";
         } else if (table === 'events') {
-            title = `Nouvel événement : ${record.title}`;
-            body = `Le ${record.date} à ${record.time || 'toute la journée'}`;
+            title = `📅 ${record.title}`;
+            body = `Le ${record.date}`;
             url = "/calendar";
         } else if (table === 'todos') {
-            title = `Nouvelle tâche : ${record.text.substring(0, 30)}`;
-            body = `Catégorie : ${record.category || 'Général'}`;
+            title = `✅ Tâche : ${record.text?.substring(0, 30)}`;
+            body = `Catégorie : ${record.category}`;
             url = "/dashboard";
         } else if (table === 'timeline_events') {
-            title = `Nouveau souvenir : ${record.title}`;
-            body = `Ajouté à votre histoire du ${record.date}`;
+            title = `🕰️ Nouveau souvenir !`;
+            body = `${record.title}`;
             url = "/timeline";
         } else if (table === 'surprises') {
-            title = `Une surprise vous attend ! 🎁`;
+            title = `🎁 Surprise !`;
             body = `${record.title}`;
             url = "/surprises";
         }
 
-        const notificationPayload = JSON.stringify({
-            title,
-            body,
-            url
+        const notificationPayload = JSON.stringify({ title, body, url });
+        console.log("📦 Payload:", notificationPayload);
+
+        // 6. Send Pushes
+        const promises = subs.map(async (subRow) => {
+            try {
+                const sub = typeof subRow.subscription === 'string'
+                    ? JSON.parse(subRow.subscription)
+                    : subRow.subscription;
+
+                await webpush.sendNotification(sub, notificationPayload);
+                console.log("✅ Push sent successfully.");
+            } catch (err: any) {
+                console.error("❌ Send Error:", err);
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                    // Cleanup invalid
+                    await supabase.from('push_subscriptions').delete().match({ subscription: subRow.subscription });
+                    console.log("🗑️ Deleted invalid subscription.");
+                }
+            }
         });
 
-        const sendPromises = subs.map(subRow => {
-            const sub = subRow.subscription;
-            // Check if subscription is valid JSON or object
-            const subObj = (typeof sub === 'string') ? JSON.parse(sub) : sub;
+        await Promise.all(promises);
+        return new Response("Notifications processed", { status: 200 });
 
-            return webpush.sendNotification(subObj, notificationPayload)
-                .catch(err => {
-                    if (err.statusCode === 410 || err.statusCode === 404) {
-                        console.log('Subscription expired/invalid, deleting...');
-                        return supabase.from('push_subscriptions').delete().match({ subscription: sub });
-                    }
-                    console.error("Error sending push:", err);
-                });
-        });
-
-        await Promise.all(sendPromises);
-
-        return new Response("Push sent!", { status: 200 });
-
-    } catch (error) {
-        console.error(error);
+    } catch (error: any) {
+        console.error("🔥 Fatal Error:", error);
         return new Response(error.message, { status: 500 });
     }
 });
