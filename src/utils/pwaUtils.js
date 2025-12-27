@@ -58,7 +58,13 @@ export const subscribeUserToPush = async () => {
                     subscription: JSON.stringify(sub)
                 }, { onConflict: 'user_id, subscription' });
             
-            if (error) console.error('DB Save error:', error);
+            if (error) {
+                console.error('DB Save error:', error);
+                alert("Erreur de sauvegarde base de données: " + error.message);
+                return null;
+            } else {
+                 console.log("Subscription saved to DB");
+            }
         }
 
         return sub;
