@@ -65,9 +65,25 @@ serve(async (req: Request) => {
         }
 
         // 1. Identify Sender
-        const { data: senderUser, error: senderError } = await supabase.auth.admin.getUserById(senderId);
-        if (senderError) console.error("Error fetching sender:", senderError);
-        const senderName = senderUser?.user?.user_metadata?.name || "Votre partenaire";
+        // 1. Identify Sender
+        let senderName = "Votre partenaire";
+        try {
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('name, username')
+                .eq('id', senderId)
+                .single();
+
+            if (profileError) {
+                console.error("Error fetching profile:", profileError);
+            } else if (profileData) {
+                // Prioritize name, fallback to username, then default
+                senderName = profileData.name || profileData.username || senderName;
+            }
+        } catch (err) {
+            console.error("Profile fetch exception:", err);
+        }
+
         console.log("👤 Sender:", senderName);
 
         // 2. Identify Couple ID
