@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Save, Shield, Trash2, RefreshCw, Sun, Moon, Palette, Bell } from 'lucide-react';
 import { useCouple } from '../../context/CoupleContext';
 import { useTheme } from '../../context/ThemeContext';
+import { subscribeUserToPush, unsubscribeUserFromPush, checkSubscriptionStatus } from '../../utils/pwaUtils';
 
 const SettingsModal = ({ onClose }) => {
     const { coupleData, updateCouple, updateSecurity, logout, deleteCouple } = useCouple();
@@ -16,6 +17,13 @@ const SettingsModal = ({ onClose }) => {
     const [confirmPin, setConfirmPin] = useState('');
     const [pinError, setPinError] = useState('');
     const [pinSuccess, setPinSuccess] = useState('');
+
+    const [isSubscribed, setIsSubscribed] = useState(false);
+
+    // Check subscription status on mount
+    React.useEffect(() => {
+        checkSubscriptionStatus().then(setIsSubscribed);
+    }, []);
 
     // Theme customization state
     const [customColors, setCustomColors] = useState(getReferenceColors());
@@ -471,40 +479,53 @@ const SettingsModal = ({ onClose }) => {
                         </h3>
                         <div style={{ background: 'var(--color-surface)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                <span style={{ color: 'var(--color-text)' }}>Activer sur cet appareil</span>
+                                <span style={{ color: 'var(--color-text)' }}>
+                                    {isSubscribed ? 'Notifications activées' : 'Activer sur cet appareil'}
+                                </span>
                                 <button
                                     onClick={async () => {
                                         if (!('Notification' in window)) {
                                             alert("Notifications non supportées sur ce navigateur.");
                                             return;
                                         }
-                                        if (Notification.permission === 'granted') {
-                                            alert("Les notifications sont déjà activées ! ✅");
+
+                                        if (isSubscribed) {
+                                            if (window.confirm("Voulez-vous désactiver les notifications sur cet appareil ?")) {
+                                                const success = await unsubscribeUserFromPush();
+                                                if (success) {
+                                                    setIsSubscribed(false);
+                                                    alert("Notifications désactivées.");
+                                                } else {
+                                                    alert("Erreur lors de la désactivation.");
+                                                }
+                                            }
                                         } else {
-                                            const perm = await Notification.requestPermission();
-                                            if (perm === 'granted') {
-                                                // Save Subscription to DB
-                                                import('../../utils/pwaUtils').then(async ({ subscribeUserToPush }) => {
-                                                    const sub = await subscribeUserToPush();
-                                                    if (sub) alert("Félicitations ! Vous recevrez désormais les notifications. 🔔");
-                                                    else alert("Notifications activées, mais l'enregistrement serveur a échoué (Clé VAPID manquante ?).");
-                                                });
+                                            const permission = await Notification.requestPermission();
+                                            if (permission === 'granted') {
+                                                const sub = await subscribeUserToPush();
+                                                if (sub) {
+                                                    setIsSubscribed(true);
+                                                    alert("C'est fait ! Les notifications sont activées. 🔔");
+                                                } else {
+                                                    alert("Erreur technique lors de l'abonnement push.");
+                                                }
                                             } else {
-                                                alert("Permission refusée. Vérifiez vos paramètres navigateur. 🚫");
+                                                alert("Permission refusée. Vérifiez les réglages de votre appareil.");
                                             }
                                         }
                                     }}
                                     style={{
                                         padding: '0.5rem 1rem',
-                                        background: Notification.permission === 'granted' ? '#00b894' : 'var(--color-primary)',
+                                        background: isSubscribed ? '#ff7675' : '#00b894',
                                         color: 'white',
                                         borderRadius: '20px',
                                         border: 'none',
                                         cursor: 'pointer',
-                                        fontSize: '0.9rem'
+                                        fontSize: '0.9rem',
+                                        transition: 'background 0.3s'
                                     }}
                                 >
-                                    {Notification.permission === 'granted' ? 'Activé' : 'Activer'}
+                                    {isSubscribed ? 'Désactiver' : 'Activer'}
                                 </button>
                             </div>
                             <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>

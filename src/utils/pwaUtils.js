@@ -67,3 +67,49 @@ export const subscribeUserToPush = async () => {
         return null;
     }
 };
+
+export const unsubscribeUserFromPush = async () => {
+    if (!('serviceWorker' in navigator)) return false;
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+            // 1. Unsubscribe locally (Browser)
+            await subscription.unsubscribe();
+
+            // 2. Remove from DB
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // We use the endpoint to identify the subscription in DB
+                // Since 'subscription' is JSONB, we can filter by the endpoint URL inside it.
+                const { error } = await supabase
+                    .from('push_subscriptions')
+                    .delete()
+                    .eq('user_id', user.id)
+                    // Postgres JSONB operator ->> gets field as text
+                    .filter('subscription->>endpoint', 'eq', subscription.endpoint);
+
+                if (error) console.error('DB Unsubscribe error:', error);
+            }
+            return true;
+        }
+        return true; // Already unsubscribed
+    } catch (error) {
+        console.error('Unsubscribe failed:', error);
+        return false;
+    }
+};
+
+export const checkSubscriptionStatus = async () => {
+    if (!('serviceWorker' in navigator)) return false;
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        return !!subscription;
+    } catch (error) {
+        console.error('Check status failed:', error);
+        return false;
+    }
+};
