@@ -107,7 +107,28 @@ export const checkSubscriptionStatus = async () => {
     try {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
-        return !!subscription;
+        
+        if (!subscription) return false;
+
+        // Verify if it exists in DB
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
+
+        const { data, error } = await supabase
+            .from('push_subscriptions')
+            .select('id')
+            .eq('user_id', user.id)
+            .filter('subscription->>endpoint', 'eq', subscription.endpoint)
+            .maybeSingle();
+
+        if (error || !data) {
+            // Subscription exists in browser but not in DB (Zombie state)
+            // We return false so the UI shows "Activer" to let user repair it.
+            console.log("Subscription missing in DB");
+            return false;
+        }
+
+        return true;
     } catch (error) {
         console.error('Check status failed:', error);
         return false;
