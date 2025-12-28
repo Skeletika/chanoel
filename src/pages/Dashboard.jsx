@@ -11,6 +11,7 @@ import ChatModule from '../components/modules/ChatModule';
 import JournalModule from '../components/modules/JournalModule';
 import NotesModule from '../components/modules/NotesModule';
 import SurprisesModule from '../components/modules/SurprisesModule';
+import ListsModule from '../components/modules/ListsModule';
 import SettingsModal from '../components/ui/SettingsModal';
 import ProfileModal from '../components/ui/ProfileModal';
 import { Settings, LogOut } from 'lucide-react';
@@ -152,6 +153,9 @@ const Dashboard = () => {
                 <GridContainer>
                     <ModuleCard key="gallery" title="Galerie">
                         <GalleryModule />
+                    </ModuleCard>
+                    <ModuleCard key="lists" title="Listes">
+                        <ListsModule />
                     </ModuleCard>
                     <ModuleCard key="calendar" title="Calendrier">
                         <CalendarModule />
