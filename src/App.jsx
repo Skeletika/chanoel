@@ -12,11 +12,11 @@ const ProtectedRoute = ({ children }) => {
   if (loading) return <div>Chargement...</div>; // Or a spinner
 
   // Simple auth check
-  if (!coupleData.isAuthenticated) return <Navigate to="/login" />;
+  if (!coupleData.isAuthenticated) return <Navigate to="/login" replace />;
 
   // If authenticated but no couple, force onboarding (unless we are already on onboarding)
   if (!coupleData.couple?.id && window.location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" />;
+    return <Navigate to="/onboarding" replace />;
   }
 
   return children;

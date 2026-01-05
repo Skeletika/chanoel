@@ -25,24 +25,41 @@ export const CoupleProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Check active session and fetch data
+    let mounted = true;
+
+    // Initial Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchCoupleData(session.user.id);
-      else setLoading(false);
+      if (!mounted) return;
+      if (session) {
+        setSession(session);
+        fetchCoupleData(session.user.id);
+      }
+      // If no session here, we WAIT for onAuthStateChange to confirm or deny
+      // This prevents the "flash of login" if getSession is faster than the auth state sync
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchCoupleData(session.user.id);
-      else {
-        setCoupleData(prev => ({ ...prev, isAuthenticated: false }));
-        setLoading(false);
+      if (!mounted) return;
+      console.log("Auth State Change:", _event);
+
+      if (session) {
+        setSession(session);
+        // Only fetch if we haven't already (or if user changed) [Optional optimization, but safe to fetch]
+        fetchCoupleData(session.user.id);
+      } else {
+        // Only set loading false if we are SURE there is no session (SIGNED_OUT or INITIAL_SESSION with null)
+        if (_event === 'SIGNED_OUT' || _event === 'INITIAL_SESSION') {
+          setCoupleData(prev => ({ ...prev, isAuthenticated: false }));
+          setLoading(false);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchCoupleData = async (userId) => {
