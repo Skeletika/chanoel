@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCouple } from '../context/CoupleContext';
 import { Lock, Mail, User, ArrowRight, Heart } from 'lucide-react';
+import IOSTriggerButton from '../components/ui/IOSTriggerButton';
 
 const Login = () => {
     const { login, signup } = useCouple();
@@ -285,7 +286,7 @@ const Login = () => {
                     </button>
                 </div>
 
-                {/* Emergency Reset */}
+                {/* Bouton réinitialisation */}
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     <button
                         onClick={() => { localStorage.clear(); window.location.reload(); }}
@@ -293,6 +294,11 @@ const Login = () => {
                     >
                         Problème d'affichage ? Réinitialiser
                     </button>
+                </div>
+
+                {/* Proposition d'installation iOS (⭐ visible uniquement sur iOS Safari non installé) */}
+                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                    <IOSTriggerButton />
                 </div>
             </div>
         </div>

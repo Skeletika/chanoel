@@ -9,16 +9,13 @@ import LandingPage from './pages/LandingPage';
 import AndroidInstallBanner from './components/ui/AndroidInstallBanner';
 import IOSTutorialModal from './components/ui/IOSTutorialModal';
 
-
 const ProtectedRoute = ({ children }) => {
   const { coupleData, loading } = useCouple();
 
-  if (loading) return <div>Chargement...</div>; // Or a spinner
+  if (loading) return <div>Chargement...</div>;
 
-  // Simple auth check
   if (!coupleData.isAuthenticated) return <Navigate to="/login" replace />;
 
-  // If authenticated but no couple, force onboarding (unless we are already on onboarding)
   if (!coupleData.couple?.id && window.location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
@@ -56,20 +53,18 @@ const AppContent = () => {
 function App() {
   return (
     <CoupleProvider>
-      <AppContent />
       {/*
-       * Composants PWA montés au niveau racine (hors Router).
-       * Ils s'affichent sur toutes les pages de l'app.
-       * Leur logique interne (via usePWAInstall) garantit :
-       *   - Aucune apparition sur Desktop
-       *   - Aucune apparition si l'app est déjà installée (standalone)
-       *   - Pas de répétition dans la même session (sessionStorage)
+       * IOSTutorialModal agit comme Provider (Context).
+       * Il entoure toute l'app pour que Login, Onboarding et Dashboard
+       * puissent appeler useIOSTutorial() pour rouvrir le modal.
+       * La bannière Android reste montée en frère.
        */}
-      <AndroidInstallBanner />
-      <IOSTutorialModal />
+      <IOSTutorialModal>
+        <AppContent />
+        <AndroidInstallBanner />
+      </IOSTutorialModal>
     </CoupleProvider>
   );
 }
 
 export default App;
-

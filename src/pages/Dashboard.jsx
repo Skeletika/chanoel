@@ -14,6 +14,7 @@ import SurprisesModule from '../components/modules/SurprisesModule';
 import ListsModule from '../components/modules/ListsModule';
 import SettingsModal from '../components/ui/SettingsModal';
 import ProfileModal from '../components/ui/ProfileModal';
+import IOSTriggerButton from '../components/ui/IOSTriggerButton';
 import { Settings, LogOut } from 'lucide-react';
 
 const Dashboard = () => {
@@ -64,6 +65,8 @@ const Dashboard = () => {
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {/* Proposition iOS — visible uniquement sur iOS Safari non installé */}
+                    <IOSTriggerButton />
                     <button onClick={() => setShowSettings(true)} style={{ color: 'var(--color-text-muted)' }}><Settings size={20} /></button>
                     <button onClick={logout} style={{ color: 'var(--color-text-muted)' }}><LogOut size={20} /></button>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

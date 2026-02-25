@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCouple } from '../context/CoupleContext';
 import { User, Heart, Lock, ArrowRight, ArrowLeft, Camera, Copy, Check, LogOut } from 'lucide-react';
+import IOSTriggerButton from '../components/ui/IOSTriggerButton';
 
 const Onboarding = () => {
     const navigate = useNavigate();
@@ -207,6 +208,11 @@ const Onboarding = () => {
                     <button onClick={() => setStep(10)} style={secondaryButtonStyle}>
                         <User size={20} /> Rejoindre mon partenaire
                     </button>
+                </div>
+
+                {/* Proposition installation iOS — visible uniquement sur iOS Safari non installé */}
+                <div style={{ marginTop: '1.5rem' }}>
+                    <IOSTriggerButton />
                 </div>
             </div>
         );
