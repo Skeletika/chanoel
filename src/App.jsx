@@ -5,6 +5,10 @@ import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
+// ── Composants PWA (installation Android & tutoriel iOS) ──
+import AndroidInstallBanner from './components/ui/AndroidInstallBanner';
+import IOSTutorialModal from './components/ui/IOSTutorialModal';
+
 
 const ProtectedRoute = ({ children }) => {
   const { coupleData, loading } = useCouple();
@@ -53,8 +57,19 @@ function App() {
   return (
     <CoupleProvider>
       <AppContent />
+      {/*
+       * Composants PWA montés au niveau racine (hors Router).
+       * Ils s'affichent sur toutes les pages de l'app.
+       * Leur logique interne (via usePWAInstall) garantit :
+       *   - Aucune apparition sur Desktop
+       *   - Aucune apparition si l'app est déjà installée (standalone)
+       *   - Pas de répétition dans la même session (sessionStorage)
+       */}
+      <AndroidInstallBanner />
+      <IOSTutorialModal />
     </CoupleProvider>
   );
 }
 
 export default App;
+
