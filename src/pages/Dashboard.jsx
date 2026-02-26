@@ -12,6 +12,7 @@ import JournalModule from '../components/modules/JournalModule';
 import NotesModule from '../components/modules/NotesModule';
 import SurprisesModule from '../components/modules/SurprisesModule';
 import ListsModule from '../components/modules/ListsModule';
+import AdBanner from '../components/ui/AdBanner';
 import SettingsModal from '../components/ui/SettingsModal';
 import ProfileModal from '../components/ui/ProfileModal';
 import IOSTriggerButton from '../components/ui/IOSTriggerButton';
@@ -151,40 +152,82 @@ const Dashboard = () => {
                 </div>
             </header>
 
-            {/* Grid Content */}
-            <div style={{ flex: 1, overflow: 'auto', paddingBottom: '1rem' }}>
-                <GridContainer>
-                    <ModuleCard key="gallery" title="Galerie">
-                        <GalleryModule />
-                    </ModuleCard>
-                    <ModuleCard key="lists" title="Listes">
-                        <ListsModule />
-                    </ModuleCard>
-                    <ModuleCard key="calendar" title="Calendrier">
-                        <CalendarModule />
-                    </ModuleCard>
-                    <ModuleCard key="timeline" title="Notre Histoire">
-                        <TimelineModule />
-                    </ModuleCard>
-                    <ModuleCard key="todo" title="À faire">
-                        <TodoModule />
-                    </ModuleCard>
-                    <ModuleCard key="meals" title="Repas">
-                        <MealsModule />
-                    </ModuleCard>
-                    <ModuleCard key="chat" title="Discussion">
-                        <ChatModule />
-                    </ModuleCard>
-                    <ModuleCard key="journal" title="Journal">
-                        <JournalModule />
-                    </ModuleCard>
-                    <ModuleCard key="notes" title="Notes">
-                        <NotesModule />
-                    </ModuleCard>
-                    <ModuleCard key="surprises" title="Surprises">
-                        <SurprisesModule />
-                    </ModuleCard>
-                </GridContainer>
+            {/* Grid Content and Ad Area */}
+            {/* Conteneur principal qui gère UNIQUEMENT le défilement. */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
+
+                {/* Conteneur Flex interne pour positionner les éléments côte à côte */}
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    minHeight: '100%',
+                    paddingBottom: '2rem'
+                }}>
+                    {/* Main Content Area */}
+                    <div style={{
+                        flex: 1, // Prend tout l'espace restant
+                        width: '100%',
+                        paddingLeft: '1rem' // Ajoute un petit espace à gauche pour équilibrer avec la pub à droite
+                    }}>
+                        <GridContainer>
+                            <ModuleCard key="gallery" title="Galerie">
+                                <GalleryModule />
+                            </ModuleCard>
+                            <ModuleCard key="lists" title="Listes">
+                                <ListsModule />
+                            </ModuleCard>
+                            <ModuleCard key="calendar" title="Calendrier">
+                                <CalendarModule />
+                            </ModuleCard>
+                            <ModuleCard key="timeline" title="Notre Histoire">
+                                <TimelineModule />
+                            </ModuleCard>
+                            <ModuleCard key="todo" title="À faire">
+                                <TodoModule />
+                            </ModuleCard>
+                            <ModuleCard key="meals" title="Repas">
+                                <MealsModule />
+                            </ModuleCard>
+                            <ModuleCard key="chat" title="Discussion">
+                                <ChatModule />
+                            </ModuleCard>
+                            <ModuleCard key="journal" title="Journal">
+                                <JournalModule />
+                            </ModuleCard>
+                            <ModuleCard key="notes" title="Notes">
+                                <NotesModule />
+                            </ModuleCard>
+                            <ModuleCard key="surprises" title="Surprises">
+                                <SurprisesModule />
+                            </ModuleCard>
+                        </GridContainer>
+                    </div>
+
+                    {/* Wrapper pour l'Espace AdSense verticale (Desktop uniquement) */}
+                    <div className="adsense-desktop-sidebar" style={{
+                        display: 'none', // Caché par défaut via CSS (mobile/tablette)
+                        width: '160px',
+                        marginLeft: '1rem',
+                        marginRight: '2rem',
+                        flexShrink: 0
+                        // Remarque : pas d'align-self ici !
+                        // Comme on n'utilise pas align-self, cette div s'étirera en hauteur 
+                        // pour égaler celle de la div voisine "Main Content Area".
+                    }}>
+                        {/* L'élément publicitaire proprement dit, qui va "coller" dans son grand parent */}
+                        <div style={{
+                            position: 'sticky',
+                            top: '1rem', // Marge depuis le haut lors du scroll
+                            paddingTop: '1rem' // Petit décalage optique pour que ça arrive au niveau de la grille
+                        }}>
+                            <AdBanner
+                                client="ca-pub-6762550695205990"
+                                slot="2296475633"
+                                style={{ display: 'inline-block', width: '160px', height: '600px' }}
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Settings Modal */}

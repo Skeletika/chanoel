@@ -461,3 +461,13 @@ textarea {
   font-size: 0.95rem;
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════
+   ESPACE PUBLICITAIRE ADSENSE (DESKTOP)
+   ═══════════════════════════════════════════════════════ */
+
+@media (min-width: 1400px) {
+  .adsense-desktop-sidebar {
+    display: block !important;
+  }
+}
