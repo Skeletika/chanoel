@@ -583,6 +583,12 @@ const SettingsModal = ({ onClose }) => {
                         </button>
                     </section>
 
+                    {/* Liens légaux */}
+                    <div style={{ marginTop: '2.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'center', gap: '1.5rem', opacity: 0.7 }}>
+                        <a href="/legal/Conditions-générales-IDEAL.html" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Conditions Générales</a>
+                        <a href="/legal/Politique-de-confidentialité-IDEAL.html" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Confidentialité</a>
+                    </div>
+
                 </div>
             </div>
         </div>
