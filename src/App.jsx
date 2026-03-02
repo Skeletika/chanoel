@@ -27,7 +27,9 @@ const AppContent = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* Redirige la racine vers /app/ (exclu d'AdSense) */}
+        <Route path="/" element={<Navigate to="/app" replace />} />
+        <Route path="/app" element={<LandingPage />} />
         {/* Pages sous /app/ : exclues du programme AdSense (peu de contenu éditorial) */}
         <Route path="/app/login" element={<Login />} />
         <Route

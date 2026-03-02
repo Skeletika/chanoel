@@ -36,7 +36,7 @@ const Onboarding = () => {
     // Security Redirect
     useEffect(() => {
         if (!loading && !session) {
-            navigate('/login');
+            navigate('/app/login');
         }
     }, [session, loading, navigate]);
 
@@ -108,7 +108,7 @@ const Onboarding = () => {
         }
         if (!session?.user?.id) {
             alert("Erreur: Session expirée. Veuillez vous reconnecter.");
-            navigate('/login');
+            navigate('/app/login');
             return;
         }
 

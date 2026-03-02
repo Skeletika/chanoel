@@ -57,7 +57,7 @@ const LandingPage = () => {
                 </button>
 
                 <button
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/app/login')}
                     style={{
                         padding: '1rem 2rem',
                         backgroundColor: 'transparent',
