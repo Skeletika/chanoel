@@ -35,7 +35,7 @@ const Login = () => {
 
                 if (data.session) {
                     // Auto-login successful -> Go to Step 2 (Onboarding)
-                    navigate('/onboarding');
+                    navigate('/app/onboarding');
                 } else if (data.user && !data.session) {
                     // Email verification required
                     setSuccess('Compte créé avec succès ! Veuillez vérifier vos emails pour valider votre inscription.');

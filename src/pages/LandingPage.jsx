@@ -40,7 +40,7 @@ const LandingPage = () => {
 
             <div style={{ display: 'flex', gap: '1rem' }}>
                 <button
-                    onClick={() => navigate('/onboarding')}
+                    onClick={() => navigate('/app/onboarding')}
                     style={{
                         padding: '1rem 2rem',
                         backgroundColor: 'var(--color-primary)',

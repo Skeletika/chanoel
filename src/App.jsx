@@ -14,10 +14,10 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) return <div>Chargement...</div>;
 
-  if (!coupleData.isAuthenticated) return <Navigate to="/login" replace />;
+  if (!coupleData.isAuthenticated) return <Navigate to="/app/login" replace />;
 
-  if (!coupleData.couple?.id && window.location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
+  if (!coupleData.couple?.id && window.location.pathname !== '/app/onboarding') {
+    return <Navigate to="/app/onboarding" replace />;
   }
 
   return children;
@@ -28,15 +28,17 @@ const AppContent = () => {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        {/* Pages sous /app/ : exclues du programme AdSense (peu de contenu éditorial) */}
+        <Route path="/app/login" element={<Login />} />
         <Route
-          path="/onboarding"
+          path="/app/onboarding"
           element={
             <ProtectedRoute>
               <Onboarding />
             </ProtectedRoute>
           }
         />
-        <Route path="/login" element={<Login />} />
+        {/* Dashboard : URL propre, autorisée dans AdSense */}
         <Route
           path="/dashboard"
           element={
@@ -45,6 +47,9 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        {/* Rétrocompatibilité : anciennes URLs redirigent vers les nouvelles */}
+        <Route path="/login" element={<Navigate to="/app/login" replace />} />
+        <Route path="/onboarding" element={<Navigate to="/app/onboarding" replace />} />
       </Routes>
     </Router>
   );
